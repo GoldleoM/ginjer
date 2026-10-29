@@ -7,7 +7,7 @@ import { theme } from '../../../theme';
 import { signIn } from '../services/auth';
 import { validateCredentials } from '../services/validation';
 import type { AuthUser } from '../types';
-export function SignInScreen({ onSignedIn }: { onSignedIn: (user: AuthUser) => void }) {
+export function SignInScreen({ onSignedIn, onPreview }: { onSignedIn: (user: AuthUser) => void; onPreview: () => void }) {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null); const submitting = useRef(false);
@@ -38,6 +38,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: (user: AuthUser) => v
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={submit} style={({ pressed }) => [styles.button, { opacity: pressed || busy ? 0.7 : 1 }]}>
           {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Log In</Text>}
         </Pressable>
+        <Pressable accessibilityRole="button" onPress={onPreview} disabled={busy} style={styles.previewButton}><Text style={styles.previewText}>Preview device screens</Text></Pressable>
       </View>
       <Text style={styles.legal}>By continuing, I accept the <Text accessibilityRole="link" onPress={() => openLegal('terms.html')} style={styles.link}>Terms and Conditions</Text> and <Text accessibilityRole="link" onPress={() => openLegal('privacy.html')} style={styles.link}>Privacy Policy.</Text></Text>
     </ScrollView>
@@ -53,6 +54,8 @@ const styles = StyleSheet.create({
   error: { color: theme.colors.error, fontSize: 14 },
   button: { backgroundColor: theme.colors.primary, minHeight: 54, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 24 },
   buttonText: { color: 'white', fontSize: 20, fontWeight: '600' },
+  previewButton: { alignItems: 'center', minHeight: 44, justifyContent: 'center' },
+  previewText: { color: '#6D941B', fontWeight: '600', fontSize: 14 },
   legal: { color: theme.colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 56, paddingHorizontal: 24 },
   link: { color: '#78A51A', fontWeight: '600' },
 });
