@@ -1,0 +1,1 @@
+export const theme = { colors: { primary: '#83AF23', text: '#2B2B2B', muted: '#999999', border: '#EEEEEE', background: '#FFFFFF', error: '#B42318' }, spacing: { page: 16 }, radius: { input: 8, button: 12 } } as const;

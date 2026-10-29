@@ -1,0 +1,9 @@
+{
+  "Sign In": "query SignIn($auth: SignInInput!) {\n  signIn(auth: $auth) {\n    _id\n    firstName\n    lastName\n    emailId\n    token\n    defaultAccount\n    organisationId\n  }\n}\n",
+  "Org List": "query OrgList {\n  accounts {\n    organisationId\n    name\n    isActive\n    isAccepted\n    isAdmin\n  }\n}\n",
+  "Project List": "query ProjectList($params: ParamInput!) {\n  projectOverview(params: $params) {\n    _id\n    name\n    description\n    active\n    organisationId\n    location { placeName lat lng }\n    userCount { _id userCount }\n    deviceCount { _id deviceCount }\n    clusterCount { _id clusterCount }\n    nonLoRaWANDeviceCount { _id nonLoRaWANDeviceCount }\n  }\n}\n",
+  "Device List": "query DeviceList($params: ParamInput!) {\n  projects(params: $params) {\n    _id\n    name\n    clusters {\n      _id\n      name\n      devices {\n        _id\n        name\n        devEui\n        hardwareId\n        timestamp\n      }\n    }\n  }\n}\n",
+  "Device Details": "query DeviceDetails($params: ParamInput!) {\n  projects(params: $params) {\n    _id\n    name\n    clusters {\n      _id\n      name\n      devices {\n        _id\n        name\n        description\n        devEui\n        organisationId\n        projectId\n        clusterId\n        hardwareId\n        networkId\n        hardwareType\n        timestamp\n        deleted\n        position { placeName lat lng }\n        outputs { outputId outputName value label color }\n        attributes { attributeId attributeName value }\n      }\n    }\n  }\n}\n",
+  "Module List": "query ModuleList($params: ParamInput!) {\n  modules(params: $params) {\n    _id\n    label\n    moduleType\n    organisationId\n  }\n}\n",
+  "Send Downlink": "query SendDownlink($action: SendDownlinkInput!) {\n  sendDownlink(action: $action) {\n    timestamp\n    type\n    message\n  }\n}\n"
+}
