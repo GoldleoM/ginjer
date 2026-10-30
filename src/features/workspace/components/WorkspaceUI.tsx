@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import { theme } from '../../../theme';
 import { Image } from 'react-native';
+import { NavigationIcon } from '../../../components/NavigationIcon';
 
 export const liveColors = { green: '#8BAE41', dark: '#2B2B2B', muted: '#858585', border: '#E7E7E7', error: '#B42318' };
 export function ActionIcon({ icon, label, onPress, disabled = false }: {
@@ -18,7 +19,7 @@ export function DeviceThumbnail({ device, size = 44 }: { device: Device; size?: 
   const [failedImage, setFailedImage] = useState<Device['image']>();
   return <View style={[styles.thumbnail, { width: size, height: size }]}>
     {device.image && device.image !== failedImage ? <Image source={device.image} onError={() => setFailedImage(device.image)} resizeMode="contain" style={{ width: '100%', height: '100%' }} />
-      : <MaterialCommunityIcons name={device.icon ?? 'router-wireless'} size={size * 0.57} color="#8BAE41" />}
+      : device.icon ? <MaterialCommunityIcons name={device.icon} size={size * 0.57} color="#8BAE41" /> : <NavigationIcon name="Devices" size={size * 0.57} color="#8BAE41" />}
   </View>;
 }
 export function WorkspaceBar({ organization, project, busy, onOrganizations, onProjects, onInfo, onRefresh }: {

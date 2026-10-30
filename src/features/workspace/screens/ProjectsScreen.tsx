@@ -6,6 +6,7 @@ import type { AuthUser } from '../../auth/types';
 import type { Workspace } from '../useWorkspace';
 import { ActionIcon, Feedback } from '../components/WorkspaceUI';
 import { searchProjects } from '../services/projectSelection';
+import { NavigationIcon } from '../../../components/NavigationIcon';
 
 export function ProjectsScreen({ user, workspace, onOpen, onOrganizations, onProfile }: {
   user: AuthUser; workspace: Workspace; onOpen: (id: string) => void; onOrganizations: () => void; onProfile: () => void;
@@ -65,7 +66,7 @@ export function ProjectsScreen({ user, workspace, onOpen, onOrganizations, onPro
             <MaterialCommunityIcons name="chevron-right" size={21} color="#91AF57" />
           </View>
           <View style={styles.counts}>
-            <View style={styles.deviceBadge}><MaterialCommunityIcons name="router-wireless" size={16} color="#303030" /><Text style={styles.deviceCount}>Devices: {project.devices}</Text></View>
+            <View style={styles.deviceBadge}><NavigationIcon name="Devices" size={16} color="#303030" /><Text style={styles.deviceCount}>Devices: {project.devices}</Text></View>
             {project.nonLoRaWANDevices > 0 && <View style={styles.deviceBadge}><Text style={styles.deviceCount}>Non-LoRaWAN: {project.nonLoRaWANDevices}</Text></View>}
           </View>
           {!!project.description && <Text numberOfLines={2} style={styles.description}>{project.description}</Text>}

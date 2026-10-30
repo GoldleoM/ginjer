@@ -6,6 +6,7 @@ import type { Operations } from '../useOperations';
 import { notificationDevice, type Notification } from '../services/operations';
 import { formatTime } from '../services/normalizers';
 import { Feedback } from '../components/WorkspaceUI';
+import { NavigationIcon } from '../../../components/NavigationIcon';
 
 const human = (value: string) => value.replace(/_/g, ' ').toLowerCase().replace(/^./, character => character.toUpperCase());
 export function NotificationBanner({ operations, devices, onDevice, onNotifications }: { operations: Operations; devices: Device[]; onDevice: (device: Device) => void; onNotifications: () => void }) {
@@ -17,7 +18,7 @@ export function NotificationBanner({ operations, devices, onDevice, onNotificati
   const device = notificationDevice(latest, devices, operations.scope);
   const title = operations.rules.data.find(item => item.id === latest.ruleId)?.name || 'Active notification';
   return <View accessibilityLiveRegion="polite" style={styles.banner}>
-    <Pressable accessibilityRole="button" onPress={() => device ? onDevice(device) : onNotifications()} style={styles.bannerBody}><MaterialCommunityIcons name="bell-alert-outline" size={22} color="#94621B" /><View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={2} style={styles.bannerTitle}>{title}</Text><Text style={styles.caption}>{device?.name || 'Project notification'} / {active.length} active</Text></View></Pressable>
+    <Pressable accessibilityRole="button" onPress={() => device ? onDevice(device) : onNotifications()} style={styles.bannerBody}><NavigationIcon name="Notifications" size={24} color="#94621B" /><View style={{ flex: 1, minWidth: 0 }}><Text numberOfLines={2} style={styles.bannerTitle}>{title}</Text><Text style={styles.caption}>{device?.name || 'Project notification'} / {active.length} active</Text></View></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Open notifications" onPress={onNotifications} style={styles.icon}><MaterialCommunityIcons name="chevron-right" size={23} color="#94621B" /></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Dismiss notification banner" onPress={() => setDismissed(key)} style={styles.icon}><MaterialCommunityIcons name="close" size={20} color="#94621B" /></Pressable>
   </View>;
@@ -43,7 +44,7 @@ export function ConnectedNotifications({ operations, devices, onDevice }: { oper
     renderItem={({ item }) => {
       const device = notificationDevice(item, devices, operations.scope);
       return <Pressable accessibilityRole={device ? "button" : undefined} accessibilityLabel={device ? name(item) + ". Open " + device.name : undefined} disabled={!device} onPress={() => device && onDevice(device)} style={styles.notificationRow}>
-        <View style={[styles.notificationIcon, { backgroundColor: item.status === 'ACTIVE' ? '#FCE9DF' : '#EFF5E4' }]}><MaterialCommunityIcons name="bell-outline" size={22} color={item.status === 'ACTIVE' ? '#F07556' : '#8BAE41'} /></View>
+        <View style={[styles.notificationIcon, { backgroundColor: item.status === 'ACTIVE' ? '#FCE9DF' : '#EFF5E4' }]}><NavigationIcon name="Notifications" size={24} color={item.status === 'ACTIVE' ? '#F07556' : '#8BAE41'} /></View>
         <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.notificationTitle}>{name(item)}</Text>
           {item.values.map((value, index) => <Text key={index} style={styles.caption}>{device?.readings.find(reading => reading.id === value.outputId)?.title || value.label || 'Output'}: {value.value || value.label || 'Not reported'}</Text>)}
           <Text style={styles.caption}>{device?.name || 'Project notification'}</Text>

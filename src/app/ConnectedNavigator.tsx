@@ -3,6 +3,7 @@ import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabs } from '../components/BottomTabs';
+import { NavigationIcon, NotificationCount, navigationColors } from '../components/NavigationIcon';
 import type { AuthUser } from '../features/auth/types';
 import type { Device } from '../features/devices/types';
 import { DeviceDetailsScreen } from '../features/devices/screens/DeviceDetailsScreen';
@@ -35,6 +36,7 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
   const [modulesOpen, setModulesOpen] = useState(false);
   const [moduleInfo, setModuleInfo] = useState<Module | null>(null);
   const activeTab: Tab = tab === 'Profile' || workspace.project ? tab : 'Projects';
+  const notificationCount = operations.notifications.error ? 0 : operations.notifications.data.filter(item => item.status === 'ACTIVE').length;
   function showProjects() {
     setDetail(null); setProjectInfo(false); setModulesOpen(false); setModuleInfo(null);
     workspace.clearProject(); setTab('Projects');
@@ -78,9 +80,10 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
       onOrganizations={openOrganizations} onProjects={showProjects} onInfo={() => setProjectInfo(true)} onRefresh={() => { workspace.refresh(); operations.refresh(); }} />}
     {!!workspace.project && activeTab !== 'Profile' && <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
-        {(['Notifications', 'Automation', 'Health'] as const).map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: activeTab === item }} onPress={() => setTab(item)} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: activeTab === item ? '#8BAE41' : '#DDDDDD', backgroundColor: activeTab === item ? '#F1F6E7' : 'white' }}>
-          <MaterialCommunityIcons name={item === 'Notifications' ? 'bell-outline' : item === 'Automation' ? 'cog-sync-outline' : 'heart-pulse'} size={19} color="#6D941B" />
-          <Text style={{ color: '#6D941B', fontSize: 12 }}>{item}{item === 'Notifications' && !operations.notifications.error && operations.notifications.data.some(item => item.status === 'ACTIVE') ? ' (' + operations.notifications.data.filter(item => item.status === 'ACTIVE').length + ')' : ''}</Text>
+        {(['Notifications', 'Automation', 'Health'] as const).map(item => <Pressable key={item} accessibilityRole="button" accessibilityLabel={item === 'Notifications' && notificationCount ? `Notifications, ${notificationCount} active` : item} accessibilityState={{ selected: activeTab === item }} onPress={() => setTab(item)} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: activeTab === item ? '#8BAE41' : '#DDDDDD', backgroundColor: activeTab === item ? '#F1F6E7' : 'white' }}>
+          <NavigationIcon name={item} size={23} color={activeTab === item ? navigationColors.active : navigationColors.inactive} />
+          <Text style={{ color: activeTab === item ? navigationColors.active : navigationColors.inactive, fontSize: 12 }}>{item}</Text>
+          {item === 'Notifications' && <NotificationCount count={notificationCount} />}
         </Pressable>)}
       </ScrollView>
       {activeTab !== 'Notifications' && <NotificationBanner operations={operations} devices={workspace.devices} onDevice={setDetail} onNotifications={() => setTab('Notifications')} />}
