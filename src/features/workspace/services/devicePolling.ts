@@ -1,4 +1,4 @@
-export const DEVICE_REFRESH_INTERVAL_MS = 10_000;
+export const DEVICE_REFRESH_INTERVAL_MS = 22_000;
 
 // One request at a time; callers handle errors and cancel their request on stop.
 export function startDevicePolling(load: (initial: boolean) => Promise<void>, isActive: () => boolean) {

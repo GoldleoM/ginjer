@@ -2,8 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startDevicePolling, DEVICE_REFRESH_INTERVAL_MS } from '../src/features/workspace/services/devicePolling.ts';
 
-test('refreshes device readings every ten seconds without overlapping requests', async context => {
+test('refreshes device readings every twenty-two seconds without overlapping requests', async context => {
   context.mock.timers.enable({ apis: ['setInterval'] });
+  assert.equal(DEVICE_REFRESH_INTERVAL_MS, 22_000);
   const calls: boolean[] = [];
   let finish!: () => void;
   const poller = startDevicePolling(initial => { calls.push(initial); return new Promise<void>(resolve => { finish = resolve; }); }, () => true);
