@@ -19,9 +19,11 @@ Set `EXPO_PUBLIC_API_BASE_URL` to override the base URL in either build type. Th
 
 ## Live application
 
-Sign in with your Ginjer account. The app loads accessible organizations, selects an active accepted membership, loads its projects, and loads the selected project's devices.
+Sign in with your Ginjer account to open **Projects**. The app loads accessible organizations, selects an active accepted membership, and lists its projects without choosing one automatically. Search by project name, description, or location, then open a project to load its devices. Return with the Projects tab or project selector; returning clears the selected scope and cancels its pending device requests.
 
-- The workspace bar switches organizations/projects across Devices, Locations, Analytics, and Profile. The information button shows project description, status, membership/device/cluster counts, non-LoRaWAN device count, location, and IDs.
+Project cards show live names, device counts, cluster/member counts, and read-only enabled status. There is no Add Project action. Creation dates and online/total device ratios are not returned by the supplied collection and are not fabricated.
+
+- The workspace bar switches organizations and returns to the Projects list across Devices, Locations, Analytics, and Profile. The information button shows project description, status, membership/device/cluster counts, non-LoRaWAN device count, location, and IDs.
 - **Devices** shows real names, hardware IDs, clusters, latest readings, and recorded timestamps. Search by name, hardware ID, DevEUI, or cluster. Filters include current/archived devices, readings recorded in the last 24 hours, and explicitly red-colored outputs.
 - **Device Details** shows all returned outputs, labels, values, output IDs, attributes and attribute IDs, descriptions, hardware/network metadata, project/cluster context, timestamps, and coordinates. Pull to refresh or use the refresh button. Technical identifiers are expandable.
 - **Locations** uses actual returned coordinates with pan/zoom, fit-to-devices, grouped markers, device cards, and detail navigation. Devices without valid coordinates remain available in a separate searchable list. Coordinate values of zero are valid.

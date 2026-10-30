@@ -4,21 +4,24 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme';
 
-type Tab = 'Devices' | 'Locations' | 'Analytics' | 'Profile';
+type Tab = 'Projects' | 'Devices' | 'Locations' | 'Analytics' | 'Profile';
 const tabs: { label: Tab; icon: ComponentProps<typeof MaterialCommunityIcons>['name'] }[] = [
+  { label: 'Projects', icon: 'view-grid-outline' },
   { label: 'Devices', icon: 'router-wireless' },
   { label: 'Locations', icon: 'map-outline' },
   { label: 'Analytics', icon: 'chart-bar' },
   { label: 'Profile', icon: 'account-outline' },
 ];
 
-export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProfile }: {
+export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProfile, onProjects, projectSelected = true }: {
+  onProjects?: () => void; projectSelected?: boolean;
   active: Tab; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onProfile: () => void;
 }) {
   const { isTablet } = useResponsiveLayout();
-  const actions: Record<Tab, () => void> = { Devices: onDevices, Locations: onLocations, Analytics: onAnalytics, Profile: onProfile };
+  const actions: Record<Tab, (() => void) | undefined> = { Projects: onProjects, Devices: onDevices, Locations: onLocations, Analytics: onAnalytics, Profile: onProfile };
+  const visibleTabs = tabs.filter(tab => tab.label === 'Projects' ? !!onProjects : tab.label === 'Profile' || projectSelected);
   return <View accessibilityRole="tablist" style={styles.tabs}>
-    {tabs.map(tab => {
+    {visibleTabs.map(tab => {
       const selected = active === tab.label;
       const color = selected ? theme.colors.primary : '#AAAAAA';
       return <Pressable key={tab.label} accessibilityRole="tab" accessibilityLabel={tab.label}

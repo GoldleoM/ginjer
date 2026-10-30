@@ -36,3 +36,10 @@ test('larger text reduces column count to keep content readable', () => {
   assert.equal(gridGeometry(740, 300, 12, 3, 2).columns, 1);
   assert.equal(gridGeometry(740, 156, 12, 4, 2).columns, 2);
 });
+
+test('project cards fit phone, tablet, and large-text layouts with their actual gutters', () => {
+  assert.deepEqual(gridGeometry(288, 280, 16, 4), { columns: 1, itemWidth: 288 });
+  assert.deepEqual(gridGeometry(736, 280, 16, 4), { columns: 2, itemWidth: 360 });
+  assert.deepEqual(gridGeometry(1248, 280, 16, 4), { columns: 4, itemWidth: 300 });
+  assert.equal(gridGeometry(1248, 280, 16, 4, 2).columns, 2);
+});

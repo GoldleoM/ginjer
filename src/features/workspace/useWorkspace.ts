@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '../auth/types';
 import type { Device } from '../devices/types';
 import type { Account, Module, ProjectOverview, WorkspaceApi } from './types';
+import { selectedProject } from './services/projectSelection';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'Unable to load this information. Please try again.';
 export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
@@ -24,7 +25,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
   const [modulesError, setModulesError] = useState('');
   const [moduleRevision, setModuleRevision] = useState(0);
   const account = accounts.find(item => item.id === accountId && item.active && item.accepted);
-  const project = projects.find(item => item.id === projectId && item.organizationId === accountId);
+  const project = account ? selectedProject(projects, accountId, projectId) : undefined;
   const scope = accountId + ':' + projectId;
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
     api.projects(account.id, controller.signal).then(items => {
       if (controller.signal.aborted) return;
       setProjects(items);
-      setProjectId(current => items.some(item => item.id === current) ? current : items.find(item => item.active)?.id ?? items[0]?.id ?? '');
+      setProjectId(current => selectedProject(items, account.id, current)?.id ?? '');
     }).catch(error => { if (!controller.signal.aborted) setProjectsError(message(error)); })
       .finally(() => { if (!controller.signal.aborted) setProjectsLoading(false); });
     return () => controller.abort();
@@ -80,19 +81,27 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
 
   function selectAccount(id: string) {
     if (!accounts.some(item => item.id === id && item.active && item.accepted) || id === accountId) return;
-    setProjectsLoading(true); setProjectId(''); setProjects([]); setDeviceData({ scope: '', items: [] });
-    setModulesEnabled(false); setModuleData({ scope: '', items: [] }); setModulesError('');
+    clearProject(); setProjectsLoading(true); setProjects([]);
     setAccountId(id);
   }
   function selectProject(id: string) {
-    if (!projects.some(item => item.id === id) || id === projectId) return;
-    setDevicesLoading(true); setDeviceData({ scope: '', items: [] }); setProjectId(id);
+    if (!account || !selectedProject(projects, accountId, id)) return false;
+    if (id !== projectId) {
+      setDevicesLoading(true); setDevicesError(''); setUpdatedAt(undefined);
+      setDeviceData({ scope: '', items: [] }); setProjectId(id);
+    }
+    return true;
+  }
+  function clearProject() {
+    setProjectId(''); setDeviceData({ scope: '', items: [] }); setDevicesError('');
+    setDevicesLoading(false); setUpdatedAt(undefined);
+    setModulesEnabled(false); setModuleData({ scope: '', items: [] }); setModulesError('');
   }
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   return {
     accounts, account, accountId, accountsLoading, accountsError, projects, project, projectId, projectsLoading, projectsError,
     devices: account && project && deviceData.scope === scope ? deviceData.items : [], devicesLoading, devicesError, updatedAt, scope,
-    selectAccount, selectProject, refresh, loading: accountsLoading || projectsLoading || devicesLoading,
+    selectAccount, selectProject, clearProject, refresh, loading: accountsLoading || projectsLoading || devicesLoading,
     error: accountsError || projectsError || devicesError,
     modules: account && moduleData.scope === accountId ? moduleData.items : [], modulesLoading, modulesError,
     loadModules: () => setModulesEnabled(true), retryModules: () => setModuleRevision(value => value + 1),

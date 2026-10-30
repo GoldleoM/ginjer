@@ -32,8 +32,8 @@ export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { 
         style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
       {!!query && <Pressable accessibilityRole="button" accessibilityLabel="Clear location search" onPress={() => setQuery('')} style={styles.icon}><MaterialCommunityIcons name="close" size={22} color="#858585" /></Pressable>}
     </View>
-    <View style={styles.filters}><Pressable accessibilityRole="button" accessibilityState={{ selected: !missing }} onPress={() => setMissing(false)} style={[styles.chip, !missing && styles.selectedChip]}><Text style={styles.filterText}>On map ? {mapped.length}</Text></Pressable>
-      <Pressable accessibilityRole="button" accessibilityState={{ selected: missing }} onPress={() => setMissing(true)} style={[styles.chip, missing && styles.selectedChip]}><Text style={styles.filterText}>Without location ? {unmapped.length}</Text></Pressable></View>
+    <View style={styles.filters}><Pressable accessibilityRole="button" accessibilityState={{ selected: !missing }} onPress={() => setMissing(false)} style={[styles.chip, !missing && styles.selectedChip]}><Text style={styles.filterText}>On map · {mapped.length}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{ selected: missing }} onPress={() => setMissing(true)} style={[styles.chip, missing && styles.selectedChip]}><Text style={styles.filterText}>Without location · {unmapped.length}</Text></Pressable></View>
   </>;
   return <View style={{ flex: 1, minHeight: 0 }} onLayout={onLayout}>
     {missing ? <FlatList key={columns} numColumns={columns} columnWrapperStyle={columns > 1 ? { gap: 12 } : undefined}
