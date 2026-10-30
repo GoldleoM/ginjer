@@ -38,6 +38,8 @@ export interface Device {
   lastHeardDetail: string;
   location: string;
   mainOutput: string;
+  mainOutputId?: string;
+  networkInterface?: string;
   needsAttention: boolean;
   recent: boolean;
   readings: DeviceReading[];

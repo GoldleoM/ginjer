@@ -5,7 +5,8 @@
 - Reference sign-in and four-tab preview, with isolated fixtures.
 - Live authenticated organizations, projects, device details, and module listing from the supplied Postman operations.
 - Shared organization/project scope, refreshed tokens, cancellation, session expiry, and native session restoration.
-- Searchable current/archived devices, complete outputs/attributes/metadata, refresh controls, and error/empty states.
+- Searchable current/archived devices, resolved hardware/network metadata, complete outputs/attributes, and visible identifiers.
+- Device packet history with date ranges and pagination, activity logs, latest packet radio data, refresh controls, and distinct error/empty states.
 - Analytics from actual current readings and attributes, plus a searchable module catalog.
 - Real-coordinate maps with pan/zoom, fit, overlapping-device selection, and missing-coordinate lists.
 - Read-only live profile identity and membership details.
@@ -13,7 +14,7 @@
 ## Needs additional backend support
 
 1. Profile updates and phone/avatar fields.
-2. Configured dashboard/module bindings and historical readings.
+2. Configured dashboard/module bindings and historical analytics charts beyond the implemented packet-history list.
 3. Notification feeds and alert history.
 4. Downlink interface discovery, payload schemas, and command permission/confirmation requirements.
 5. Any additional non-LoRaWAN device endpoints beyond the provided project counts.

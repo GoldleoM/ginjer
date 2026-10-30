@@ -4,7 +4,7 @@ import { normalizeAccounts, normalizeDevices, normalizeModules, normalizeProject
 
 const ACCOUNTS = 'query OrgList { accounts { organisationId name isActive isAccepted isAdmin } }';
 const PROJECTS = 'query ProjectList($params: ParamInput!) { projectOverview(params: $params) { _id name description active organisationId location { placeName lat lng } userCount { _id userCount } deviceCount { _id deviceCount } clusterCount { _id clusterCount } nonLoRaWANDeviceCount { _id nonLoRaWANDeviceCount } } }';
-const DEVICES = 'query DeviceDetails($params: ParamInput!) { projects(params: $params) { _id name clusters { _id name devices { _id name description devEui organisationId projectId clusterId hardwareId networkId hardwareType timestamp deleted position { placeName lat lng } outputs { outputId outputName value label color } attributes { attributeId attributeName value } } } } }';
+const DEVICES = 'query DeviceDetails($params: ParamInput!) { projects(params: $params) { _id name clusters { _id name devices { _id name description devEui organisationId projectId clusterId hardwareId networkId hardwareType mainOutputId networkInterface timestamp deleted position { placeName lat lng } outputs { outputId outputName value label color } attributes { attributeId attributeName value } } } } }';
 const MODULES = 'query ModuleList($params: ParamInput!) { modules(params: $params) { _id label moduleType organisationId } }';
 export function createWorkspaceApi(request: ApiRequest): WorkspaceApi {
   return {

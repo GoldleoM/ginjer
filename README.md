@@ -25,13 +25,13 @@ Project cards show live names, device counts, cluster/member counts, and read-on
 
 - The workspace bar switches organizations and returns to the Projects list across Devices, Locations, Analytics, and Profile. The information button shows project description, status, membership/device/cluster counts, non-LoRaWAN device count, location, and IDs.
 - **Devices** shows real names, hardware IDs, clusters, latest readings, and recorded timestamps. Search by name, hardware ID, DevEUI, or cluster. Filters include current/archived devices, readings recorded in the last 24 hours, and explicitly red-colored outputs.
-- **Device Details** shows all returned outputs, labels, values, output IDs, attributes and attribute IDs, descriptions, hardware/network metadata, project/cluster context, timestamps, and coordinates. Pull to refresh or use the refresh button. Technical identifiers are expandable.
+- **Device Details** includes resolved hardware/manufacturer/model/network/tag information, the configured main output, all outputs and attributes, coordinates, latest radio packet details, and visible identifiers. Its History tab loads paginated received packets with time filters and expandable payloads. Its Logs tab separately loads device activity messages, including honest empty/error states. Pull to refresh or use the refresh button.
 - **Locations** uses actual returned coordinates with pan/zoom, fit-to-devices, grouped markers, device cards, and detail navigation. Devices without valid coordinates remain available in a separate searchable list. Coordinate values of zero are valid.
 - **Analytics** displays the latest reported outputs and attributes, with search and links back to devices. Numeric ranges, historical series, and configured dashboards are not invented. The Modules catalog shows the returned module labels, types, IDs, and ownership, with searchable virtualized lists.
 - **Profile** displays the signed-in identity and membership role, and uses the same organization/project selection as the other tabs. Account details are read only.
 - Refresh, loading, retry, permission/session errors, and empty states are included. Requests from an old scope are cancelled; responses from a previous signed-in session cannot update the current token.
 
-The supplied collection has no profile-update, notification-feed, dashboard-configuration, or history operations. These actions remain unavailable. Its Send Downlink operation has no usable payload definition; no hardware commands are exposed or sent.
+The supplied collection omits history operations, but live schema inspection verified deviceHistoricalData and deviceLogs; both are now integrated. See docs/device-inspection-api.md for their schemas and verification scope. Profile updates, notification feeds, and dashboard configuration remain unavailable. Its Send Downlink operation has no usable payload definition; no hardware commands are exposed or sent.
 
 ## Sessions
 
