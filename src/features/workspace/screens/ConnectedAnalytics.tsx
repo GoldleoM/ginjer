@@ -8,13 +8,21 @@ import { DeviceThumbnail, Feedback, liveStyles } from '../components/WorkspaceUI
 import { deviceDataFields, type DataField } from '../services/deviceData';
 
 function Readings({ fields }: { fields: DataField[] }) {
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const height = Math.max(104, ...fields.map(field => heights[field.id] || 0));
   return <ResponsiveGrid minimumWidth={130} maximumColumns={3} gap={10}>{fields.map(field => {
     const state = [field.label, field.value].map(value => value.trim().toLowerCase()).find(value => value === 'on' || value === 'off');
     const color = state === 'on' ? '#256B38' : state === 'off' ? '#A52A24' : field.color || '#303030';
-    return <View key={field.id} style={styles.reading}>
+    return <View key={field.id} style={[styles.reading, { minHeight: height }]}>
+      <View onLayout={event => {
+        // Measure natural content, so equalization cannot grow itself on relayout.
+        const measured = Math.ceil(event.nativeEvent.layout.height) + 26;
+        setHeights(previous => previous[field.id] === measured ? previous : { ...previous, [field.id]: measured });
+      }}>
       <Text style={styles.readingName}>{field.name}</Text>
       <Text selectable style={[styles.value, { color }]}>{field.value || 'Not reported'}</Text>
       {!!field.label && field.label !== field.value && <Text style={[styles.readingLabel, { color }]}>{field.label}</Text>}
+      </View>
     </View>;
   })}</ResponsiveGrid>;
 }
@@ -38,7 +46,7 @@ export function ConnectedAnalytics({ workspace, onSelect, onModules }: { workspa
           style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
       </View>} data={groups} keyExtractor={item => item.device.id} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#83AF23" />}
-      renderItem={({ item: { device, fields } }) => <View style={itemStyle}><View style={liveStyles.card}>
+      renderItem={({ item: { device, fields } }) => <View style={itemStyle}><View style={[liveStyles.card, columns > 1 && { flexGrow: 1 }]}>
         <View style={styles.identity}><DeviceThumbnail device={device} size={48} /><View style={{ flex: 1, minWidth: 0 }}>
           <Text accessibilityRole="header" style={styles.title}>{device.name}</Text>
           {!!device.clusterName && <Text style={styles.deviceName}>{device.clusterName}</Text>}
@@ -59,7 +67,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 12, paddingBottom: 16, gap: 12 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { fontSize: 17, lineHeight: 24, fontWeight: '600', color: '#303030' }, deviceName: { fontSize: 12, color: '#858585', marginTop: 3 },
   section: { marginTop: 16, gap: 8 }, sectionTitle: { fontSize: 12, fontWeight: '600', color: '#6C765D' },
-  reading: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F7F9F5', borderWidth: 1, borderColor: '#E9EEE3', minHeight: 104 },
+  reading: { padding: 12, borderRadius: 10, backgroundColor: '#F7F9F5', borderWidth: 1, borderColor: '#E9EEE3', minHeight: 104 },
   readingName: { fontSize: 12, lineHeight: 18, color: '#687064' }, value: { fontSize: 22, lineHeight: 30, fontWeight: '600', marginTop: 8 }, readingLabel: { fontSize: 12, lineHeight: 18, marginTop: 4 },
   footer: { marginTop: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 }, metadata: { fontSize: 11, lineHeight: 17, color: '#858585' }, empty: { fontSize: 13, lineHeight: 20, color: '#858585', marginTop: 16 },
   info: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
