@@ -61,7 +61,6 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   const [tab, setTab] = useState<InspectionTab>('details');
   const [mapError, setMapError] = useState('');
   const [moreDetails, setMoreDetails] = useState(false);
-  const [showMap, setShowMap] = useState(false);
   const [downlinkOpen, setDownlinkOpen] = useState(false);
   const [historyView, setHistoryView] = useState<'packets' | 'trends'>('packets');
   const model = useDeviceInspection(device, tab, inspectionApi);
@@ -126,18 +125,14 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
               {!!device.networkId && <Metadata label="Network ID" value={device.networkId} />}
             </ResponsiveGrid>
             {!!(device.location || device.coordinates?.placeName) && <Metadata label="Location" value={device.location || device.coordinates?.placeName} />}
-            {!!device.coordinates && <View>
-              <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMap }} onPress={() => setShowMap(value => !value)} style={styles.toggle}>
-                <Text style={styles.linkText}>{showMap ? 'Hide map' : 'Show map'}</Text><MaterialCommunityIcons name={showMap ? 'chevron-up' : 'map-outline'} size={20} color="#6D941B" />
-              </Pressable>
-              {showMap && <>
-                <View style={styles.map}><LiveMap devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
-                <Pressable accessibilityRole="link" onPress={openMap} style={styles.mapLink}><MaterialCommunityIcons name="open-in-new" size={18} color="#6D941B" /><Text style={styles.linkText}>Open map</Text></Pressable>
-                {!!mapError && <Text accessibilityRole="alert" style={styles.error}>{mapError}</Text>}
-              </>}
-            </View>}
           </View>}
         </View>
+        {!!device.coordinates && <View style={[liveStyles.card, styles.information]}>
+          <Text accessibilityRole="header" style={styles.cardTitle}>Device location</Text>
+          <View style={styles.map}><LiveMap devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
+          <Pressable accessibilityRole="link" onPress={openMap} style={styles.mapLink}><MaterialCommunityIcons name="open-in-new" size={18} color="#6D941B" /><Text style={styles.linkText}>Open map</Text></Pressable>
+          {!!mapError && <Text accessibilityRole="alert" style={styles.error}>{mapError}</Text>}
+        </View>}
       </> : tab === 'history' ? <>
         <Text accessibilityRole="header" style={styles.sectionTitle}>Packet history</Text><Text style={styles.description}>{device.name}</Text>
         <View style={styles.ranges}>{(['packets', 'trends'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: historyView === value }} onPress={() => setHistoryView(value)} style={[styles.range, historyView === value && styles.selectedRange]}><Text style={styles.rangeText}>{value === 'packets' ? 'Packets' : 'Charts'}</Text></Pressable>)}</View>
