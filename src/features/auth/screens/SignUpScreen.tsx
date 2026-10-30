@@ -42,5 +42,5 @@ export function SignUpScreen({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: '#F8F8F8' }, content: { padding: 24, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center', flexGrow: 1, paddingBottom: 40 },
   back: { minHeight: 44, flexDirection: 'row', gap: 10, alignItems: 'center' }, link: { color: '#6D941B', fontSize: 14 }, title: { fontSize: 26, lineHeight: 35, color: '#303030', fontWeight: '600' }, description: { color: '#777777', fontSize: 14, lineHeight: 22 },
   field: { gap: 7 }, label: { color: '#555555', fontSize: 13 }, input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#CCCCCC', borderRadius: 8, minHeight: 50, padding: 12, color: '#303030', fontSize: 15 },
-  submit: { minHeight: 52, backgroundColor: '#83AF23', borderRadius: 10, padding: 12, alignItems: 'center', justifyContent: 'center' }, submitText: { color: 'white', fontSize: 16, fontWeight: '600' }, error: { color: '#B42318', fontSize: 14, lineHeight: 22 },
+  submit: { minHeight: 52, backgroundColor: '#8BAE41', borderRadius: 10, padding: 12, alignItems: 'center', justifyContent: 'center' }, submitText: { color: 'white', fontSize: 16, fontWeight: '600' }, error: { color: '#B42318', fontSize: 14, lineHeight: 22 },
 });

@@ -34,13 +34,13 @@ export default function App() {
   }
   return <SafeAreaProvider>
     <StatusBar barStyle="dark-content" />
-    {restoring ? <View style={styles.starting}><ActivityIndicator color="#83AF23" accessibilityLabel="Restoring your session" /><Text style={styles.startingText}>Opening Ginjer…</Text></View>
+    {restoring ? <View style={styles.starting}><ActivityIndicator color="#8BAE41" accessibilityLabel="Restoring your session" /><Text style={styles.startingText}>Opening Ginjer…</Text></View>
       : user || preview ? <MainNavigator user={user} onExit={exitSession} preview={preview} onUserUpdated={identity => setUser(current => current?._id === identity._id ? { ...current, ...identity } : current)} />
         : registering ? <SignUpScreen onBack={() => setRegistering(false)} />
           : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} onSignUp={() => setRegistering(true)} />}
     <Modal visible={busy || !!error} transparent animationType="fade" onRequestClose={() => { if (!busy) setError(''); }}>
       <SafeAreaView style={styles.overlay}><View style={styles.feedback}><ScrollView contentContainerStyle={{ gap: 16 }}>
-        {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out…</Text></>
+        {busy ? <><ActivityIndicator color="#8BAE41" /><Text>Signing out…</Text></>
           : <><Text accessibilityRole="alert" style={styles.message}>{error}</Text><Pressable accessibilityRole="button" onPress={() => setError('')} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable></>}
       </ScrollView></View></SafeAreaView>
     </Modal>

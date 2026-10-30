@@ -17,8 +17,8 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
   const otherAccounts = workspace.accounts.filter(account => account.id !== workspace.account?.id);
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'My account';
   return <View style={{ flex: 1 }}><ScrollView contentContainerStyle={[styles.content, responsiveStyles.readable]}>
-    <Text accessibilityRole="header" style={[liveStyles.heading, { textAlign: 'center', marginBottom: 30 }]}>Profile</Text>
-    <View style={styles.identity}><ProfileAvatar firstName={user.firstName || ''} lastName={user.lastName || ''} variant="initials" />
+    <Text accessibilityRole="header" style={[liveStyles.heading, { textAlign: 'center', marginBottom: 32 }]}>Profile</Text>
+    <View style={styles.identity}><ProfileAvatar firstName={user.firstName || ''} lastName={user.lastName || ''} variant="default" />
       <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{fullName}</Text><Text selectable style={styles.email}>{user.emailId}</Text></View>
     </View>
     {!!workspace.account && <Text style={styles.role}>{workspace.account.admin ? 'Administrator' : 'Member'} · {workspace.account.name}</Text>}
@@ -31,7 +31,7 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
     <View style={{ marginTop: 28, gap: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <Text accessibilityRole="header" style={liveStyles.heading}>Other organizations</Text>
-        {workspace.accountsLoading ? <ActivityIndicator color="#83AF23" accessibilityLabel="Refreshing organizations" /> : <Pressable accessibilityRole="button" onPress={workspace.refreshAccounts} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#6D941B' }}>Refresh</Text></Pressable>}
+        {workspace.accountsLoading ? <ActivityIndicator color="#8BAE41" accessibilityLabel="Refreshing organizations" /> : <Pressable accessibilityRole="button" onPress={workspace.refreshAccounts} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#6D941B' }}>Refresh</Text></Pressable>}
       </View>
       {!!workspace.accountsError && <Text accessibilityRole="alert" style={{ color: '#B42318', lineHeight: 22 }}>{workspace.accountsError}</Text>}
       {otherAccounts.map(account => <Pressable key={account.id} accessibilityRole="button" accessibilityState={{ disabled: !account.active || !account.accepted }} disabled={!account.active || !account.accepted}
@@ -55,8 +55,8 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
   </View>;
 }
 const styles = StyleSheet.create({
-  content: { padding: 16, paddingTop: 20, paddingBottom: 32 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 18 },
-  name: { color: '#303030', fontSize: 21, fontWeight: '600', lineHeight: 28 }, email: { color: '#858585', fontSize: 12, lineHeight: 20, marginTop: 5 },
+  content: { padding: 16, paddingTop: 16, paddingBottom: 32 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 18 },
+  name: { color: '#303030', fontSize: 18, fontWeight: '600', lineHeight: 28 }, email: { color: '#858585', fontSize: 12, lineHeight: 20, marginTop: 5 },
   role: { color: '#6D941B', fontSize: 12, marginBottom: 28, lineHeight: 19 }, menu: { backgroundColor: 'white', borderRadius: 9, overflow: 'hidden', marginTop: 10 },
   logout: { marginTop: 64, backgroundColor: 'white', borderRadius: 9, overflow: 'hidden' },
 });

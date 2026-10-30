@@ -33,10 +33,10 @@ export function ConnectedAnalytics({ workspace, onSelect, onModules }: { workspa
       <TextInput value={query} onChangeText={setQuery} accessibilityLabel="Search readings and devices" placeholder="Search readings or devices" autoCorrect={false}
         style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
     </>} data={groups} keyExtractor={item => item.device.id} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled"
-    refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#83AF23" />}
+    refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#8BAE41" />}
     renderItem={({ item: { device, readings } }) => <View style={styles.deviceSection}>
       <Pressable accessibilityRole="button" accessibilityLabel={'View details for ' + device.name} onPress={() => onSelect(device)} style={styles.deviceHeading}>
-        <Text style={styles.deviceName}>{device.name}</Text><MaterialCommunityIcons name="chevron-right" size={20} color="#83AF23" />
+        <Text style={styles.deviceName}>{device.name}</Text><MaterialCommunityIcons name="chevron-right" size={20} color="#8BAE41" />
       </Pressable>
       {readings.map(field => <ReadingRow key={field.id} field={field} />)}
       {!readings.length && <Text style={styles.empty}>No current readings reported.</Text>}

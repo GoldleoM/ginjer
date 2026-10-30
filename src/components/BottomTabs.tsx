@@ -26,15 +26,15 @@ export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProf
       const color = selected ? theme.colors.primary : '#AAAAAA';
       return <Pressable key={tab.label} accessibilityRole="tab" accessibilityLabel={tab.label}
         accessibilityState={{ selected }} onPress={actions[tab.label]}
-        style={({ pressed }) => [styles.tab, isTablet && { flexDirection: 'row', gap: 10 }, pressed && { opacity: 0.6 }]}>
-        <MaterialCommunityIcons name={tab.icon} size={23} color={color} />
-        <Text style={[styles.label, isTablet && { fontSize: 14 }, { color }]}>{tab.label}</Text>
+        style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}>
+        <MaterialCommunityIcons name={tab.icon} size={21} color={color} />
+        <Text style={[styles.label, { color }]}>{tab.label}</Text>
       </Pressable>;
     })}
   </View>;
 }
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', backgroundColor: 'white', paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#EEEEEE' },
+  tabs: { flexDirection: 'row', backgroundColor: 'white', paddingVertical: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#EEEEEE' },
   tab: { flex: 1, minWidth: 0, paddingHorizontal: 4, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  label: { fontSize: 11, flexShrink: 1, textAlign: 'center' },
+  label: { fontSize: 10, flexShrink: 1, textAlign: 'center' },
 });

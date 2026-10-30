@@ -41,7 +41,7 @@ export function SignInScreen({
   const showBrand = isTablet || !tight;
   const illustrationSize = isTablet
     ? Math.min(260, Math.max(0, layoutHeight - 220 * fontScale))
-    : Math.min(180, Math.max(0, layoutHeight - 600 * fontScale));
+    : Math.min(180, Math.max(0, layoutHeight - 550 * fontScale));
   const submitting = useRef(false);
   const passwordRef = useRef<TextInput>(null);
   async function submit() {
@@ -95,7 +95,7 @@ export function SignInScreen({
               {illustrationSize >= 80 && (
                 <Image
                   source={require("../../../../assets/images/sign-in-illustration.png")}
-                  style={[styles.illustration, { width: illustrationSize }]}
+                  style={[styles.illustration, { width: illustrationSize, height: illustrationSize * 175 / 180 }]}
                   resizeMode='contain'
                   accessible={false}
                 />
@@ -208,14 +208,14 @@ const styles = StyleSheet.create({
   },
   tabletContent: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingHorizontal: 32 },
   compactContent: { paddingVertical: 16, gap: 24 },
-  intro: { alignItems: 'center', width: '100%', maxWidth: 440, alignSelf: 'center' },
+  intro: { alignItems: 'center', width: '100%', maxWidth: 400, alignSelf: 'center' },
   tabletColumn: { flex: 1, minWidth: 0 },
   brand: { alignItems: "center", width: '100%' },
   logo: { width: 190, maxWidth: '100%', height: 78 },
   compactLogo: { width: 150, height: 60 },
   tagline: {
     color: theme.colors.muted,
-    fontSize: 13,
+    fontSize: 11,
     textAlign: "center",
     marginTop: 12,
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 24,
   },
-  form: { gap: 22, width: '100%', maxWidth: 440, alignSelf: 'center' },
+  form: { gap: 22, width: '100%', maxWidth: 400, alignSelf: 'center' },
   compactForm: { gap: 16 },
   eye: {
     minWidth: 44,
@@ -236,13 +236,13 @@ const styles = StyleSheet.create({
   error: { color: theme.colors.error, fontSize: 14 },
   button: {
     backgroundColor: theme.colors.primary,
-    minHeight: 54,
-    borderRadius: 12,
+    minHeight: 50,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 24,
   },
-  buttonText: { color: "white", fontSize: 20, fontWeight: "600" },
+  buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
   compactButton: { marginTop: 4 },
   previewButton: {
     alignItems: "center",

@@ -23,7 +23,7 @@ function PacketCard({ packet, device, latest = false }: { packet: DevicePacket; 
   const [expanded, setExpanded] = useState(false);
   const values = packetValues(packet, device);
   return <View style={liveStyles.card}>
-    <View style={styles.packetHeader}><MaterialCommunityIcons name="access-point" size={20} color="#83AF23" />
+    <View style={styles.packetHeader}><MaterialCommunityIcons name="access-point" size={20} color="#8BAE41" />
       <Text style={styles.packetTitle}>{latest ? 'Latest received packet' : formatTime(packet.timestamp)}</Text></View>
     {latest && <Text style={styles.caption}>{formatTime(packet.timestamp)}</Text>}
     {!!values.length && <View style={styles.packetValues}>{values.map(value => <View key={value.id} style={styles.packetValue}>
@@ -79,25 +79,34 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom', 'left', 'right']}><View style={liveStyles.shell}>
     <View style={styles.header}><ActionIcon icon="arrow-left" label="Back to previous page" onPress={onBack} />
       <Text accessibilityRole="header" style={styles.heading}>Device Details</Text>
-      {busy ? <View style={styles.icon}><ActivityIndicator color="#83AF23" accessibilityLabel="Refreshing device" /></View> : <ActionIcon icon="refresh" label="Refresh device" onPress={refresh} />}
+      {busy ? <View style={styles.icon}><ActivityIndicator color="#8BAE41" accessibilityLabel="Refreshing device" /></View> : <ActionIcon icon="refresh" label="Refresh device" onPress={refresh} />}
     </View>
     <View accessibilityRole="tablist" style={styles.tabs}>{([['details', 'Details'], ['history', 'History'], ['logs', 'Logs']] as const).map(([value, label]) =>
       <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.activeTab]}>
         <Text style={[styles.tabLabel, tab === value && styles.linkText]}>{label}</Text></Pressable>)}</View>
-    <ScrollView scrollEnabled={!mapInteracting} key={tab} contentContainerStyle={styles.content} refreshControl={<RefreshControl enabled={!mapInteracting} refreshing={busy} onRefresh={refresh} tintColor="#83AF23" />}>
+    <ScrollView scrollEnabled={!mapInteracting} key={tab} contentContainerStyle={styles.content} refreshControl={<RefreshControl enabled={!mapInteracting} refreshing={busy} onRefresh={refresh} tintColor="#8BAE41" />}>
       {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {tab === 'details' ? <>
-        <View style={styles.identity}><DeviceThumbnail device={info?.imageUri ? { ...device, image: { uri: info.imageUri } } : device} size={72} />
+        <View style={styles.identity}><DeviceThumbnail device={info?.imageUri ? { ...device, image: { uri: info.imageUri } } : device} size={48} />
           <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{device.name}</Text>
-            <Text style={styles.caption}>Last heard: {device.lastHeardDetail}</Text></View></View>
+            <Text selectable style={styles.caption}>{device.devEui || device.id}</Text>
+            <Text style={styles.caption}>Last heard: {device.lastHeardDetail}</Text></View>
+          {!device.deleted && <ActionIcon icon="download-network-outline" label="Send Downlink" onPress={() => setDownlinkOpen(true)} />}
+        </View>
         {device.deleted && <Text style={styles.archived}>Archived device</Text>}
-        {!device.deleted && <Pressable accessibilityRole="button" onPress={() => setDownlinkOpen(true)} style={[styles.range, styles.selectedRange, { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }]}><MaterialCommunityIcons name="download-network-outline" size={20} color="#6D941B" /><Text style={styles.linkText}>Send Downlink</Text></Pressable>}
         {!!model.details.error && <Text accessibilityRole="alert" style={styles.error}>{model.details.error}</Text>}
         {!!info?.warnings.length && <View style={styles.warning}><Text style={styles.label}>Some device information could not be loaded.</Text>
           {info.warnings.map(warning => <Text key={warning} style={styles.caption}>{warning}</Text>)}</View>}
-        <DeviceDataPanel device={device} mainOutputId={mainOutputId} definitions={info?.outputDefinitions} loading={model.details.busy} />
-        <View style={[liveStyles.card, styles.information]}>
-          <Text accessibilityRole="header" style={styles.cardTitle}>Device details</Text>
+
+        <View style={styles.overview}>
+          <ResponsiveGrid minimumWidth={130} maximumColumns={2} gap={12}>
+            <Metadata label="Location" value={device.clusterName || device.location} />
+            <Metadata label="Main output" value={mainOutput} />
+          </ResponsiveGrid>
+          <Pressable accessibilityRole="button" accessibilityLabel={moreDetails ? 'Show fewer device details' : 'Show more device details'} accessibilityState={{ expanded: moreDetails }} onPress={() => setMoreDetails(value => !value)} style={styles.detailsToggle}>
+            <Text style={styles.linkText}>{moreDetails ? 'Fewer details' : 'More details'}</Text><MaterialCommunityIcons name={moreDetails ? 'chevron-up' : 'chevron-down'} size={20} color="#6D941B" />
+          </Pressable>
+          {moreDetails && <View style={styles.expandedDetails}>
           <ResponsiveGrid minimumWidth={130} maximumColumns={4} gap={16}>
             <Metadata label={device.devEui ? 'DevEUI' : 'Device ID'} value={device.devEui || device.id} />
             {!!device.clusterName && <Metadata label="Cluster" value={device.clusterName} />}
@@ -108,10 +117,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             {!!info?.tag && <Metadata label="Tag" value={info.tag} />}
             <Metadata label="Connectivity" value={connectivityLabel(info?.connectivity || device.hardwareType)} />
           </ResponsiveGrid>
-          <Pressable accessibilityRole="button" accessibilityLabel={moreDetails ? 'Show fewer device details' : 'Show more device details'} accessibilityState={{ expanded: moreDetails }} onPress={() => setMoreDetails(value => !value)} style={styles.detailsToggle}>
-            <Text style={styles.linkText}>{moreDetails ? 'Fewer details' : 'More details'}</Text><MaterialCommunityIcons name={moreDetails ? 'chevron-up' : 'chevron-down'} size={20} color="#6D941B" />
-          </Pressable>
-          {moreDetails && <View style={styles.expandedDetails}>
+
             {!!device.description && <Text style={styles.description}>{device.description}</Text>}
             <ResponsiveGrid minimumWidth={130} maximumColumns={4} gap={12}>
               {!!info?.model && <Metadata label="Model" value={info.model} />}
@@ -128,6 +134,8 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             {!!(device.location || device.coordinates?.placeName) && <Metadata label="Location" value={device.location || device.coordinates?.placeName} />}
           </View>}
         </View>
+
+        <DeviceDataPanel device={device} mainOutputId={mainOutputId} definitions={info?.outputDefinitions} loading={model.details.busy} />
         {!!device.coordinates && <View style={[liveStyles.card, styles.information]}>
           <Text accessibilityRole="header" style={styles.cardTitle}>Device location</Text>
           <View style={styles.map}><LiveMap onInteractionChange={setMapInteracting} devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
@@ -158,24 +166,24 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   </View></SafeAreaView>;
 }
 const styles = StyleSheet.create({
-  information: { marginTop: 16 },
-  detailsToggle: { marginTop: 12, alignSelf: 'flex-end', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  information: { marginTop: 12 }, overview: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#EEEEEE', paddingTop: 8 },
+  detailsToggle: { marginTop: 0, alignSelf: 'center', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
   expandedDetails: { marginTop: 16, gap: 16, borderTopWidth: 1, borderTopColor: '#EEF0EB', paddingTop: 16 },
   metadata: { gap: 3, paddingVertical: 4 },
   metadataValue: { fontWeight: '500', fontSize: 14, lineHeight: 21, color: '#303030' },
-  header: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingHorizontal: 8 },
-  heading: { flex: 1, minWidth: 0, textAlign: 'center', color: '#303030', fontSize: 18, fontWeight: '600' }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: 8 },
+  heading: { flex: 1, minWidth: 0, textAlign: 'center', color: '#303030', fontSize: 16, fontWeight: '600' }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', marginHorizontal: 16, padding: 4, gap: 4, borderRadius: 10, backgroundColor: '#EAEDE5', marginBottom: 8 },
   tab: { flex: 1, minWidth: 0, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }, activeTab: { backgroundColor: 'white' }, tabLabel: { color: '#858585', fontSize: 14 },
-  content: { padding: 16, paddingTop: 12, paddingBottom: 32 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
-  name: { color: '#303030', fontSize: 21, fontWeight: '600', lineHeight: 29 }, description: { color: '#858585', fontSize: 14, lineHeight: 23, marginBottom: 16 },
-  caption: { color: '#858585', fontSize: 12, lineHeight: 19 }, label: { color: '#777777', fontSize: 12, lineHeight: 18 },
+  content: { padding: 12, paddingTop: 8, paddingBottom: 32 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  name: { color: '#303030', fontSize: 17, fontWeight: '600', lineHeight: 24 }, description: { color: '#858585', fontSize: 14, lineHeight: 23, marginBottom: 16 },
+  caption: { color: '#858585', fontSize: 11, lineHeight: 17 }, label: { color: '#777777', fontSize: 12, lineHeight: 18 },
   warning: { padding: 14, gap: 6, backgroundColor: '#FFF7E6', borderRadius: 10, marginBottom: 16 },
   archived: { color: '#94621B', backgroundColor: '#FFF3D9', padding: 12, borderRadius: 8, marginBottom: 16 },
   section: { color: '#303030', fontSize: 17, fontWeight: '600', marginTop: 24, marginBottom: 14 }, sectionTitle: { color: '#303030', fontSize: 19, fontWeight: '600', marginBottom: 8 },
   cardTitle: { color: '#303030', fontSize: 17, fontWeight: '600', marginBottom: 14 },
   outputHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 }, outputTitle: { flex: 1, color: '#555555', fontSize: 13, fontWeight: '600', lineHeight: 19 },
-  value: { color: '#303030', fontSize: 21, fontWeight: '600', lineHeight: 29, marginTop: 18, marginBottom: 8 }, outputId: { color: '#999999', fontSize: 10, lineHeight: 16, marginTop: 9, marginBottom: 6 },
+  value: { color: '#303030', fontSize: 17, fontWeight: '600', lineHeight: 29, marginTop: 18, marginBottom: 8 }, outputId: { color: '#999999', fontSize: 10, lineHeight: 16, marginTop: 9, marginBottom: 6 },
   mainBadge: { color: '#6D941B', fontSize: 11, marginTop: 8 }, map: { height: 280, borderRadius: 8, overflow: 'hidden', marginTop: 12 },
   mapLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-end', marginTop: 8 },
   linkText: { color: '#6D941B', fontSize: 14, fontWeight: '500' }, error: { color: '#B42318', fontSize: 13, lineHeight: 20, marginBottom: 12 },
@@ -185,7 +193,7 @@ const styles = StyleSheet.create({
   radio: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 14 },
   rawLabel: { color: '#858585', fontSize: 12, marginTop: 16, marginBottom: 8 }, raw: { color: '#555555', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, lineHeight: 19, padding: 12, backgroundColor: '#F7F7F7', borderRadius: 8 },
   ranges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }, range: { minHeight: 44, paddingHorizontal: 14, justifyContent: 'center', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 22, backgroundColor: 'white' },
-  selectedRange: { borderColor: '#83AF23', backgroundColor: '#EFF5E5' }, rangeText: { color: '#6D941B', fontSize: 12 },
+  selectedRange: { borderColor: '#8BAE41', backgroundColor: '#EFF5E5' }, rangeText: { color: '#6D941B', fontSize: 12 },
   pagination: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 16 }, pageButton: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
   pageCount: { flex: 1, color: '#858585', fontSize: 11, lineHeight: 18, textAlign: 'center' }, disabled: { opacity: 0.35 }, stack: { gap: 12 },
   logHeader: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }, logType: { color: '#6D941B', fontSize: 12, fontWeight: '600' }, logMessage: { color: '#444444', fontSize: 14, lineHeight: 23, marginTop: 12 },

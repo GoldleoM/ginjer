@@ -27,26 +27,31 @@ export function ConnectedNotifications({ operations, devices, onDevice }: { oper
   const [filter, setFilter] = useState<Notification['status'] | 'ALL'>('ALL');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(30);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { notifications, rules } = operations;
   const name = (item: Notification) => rules.data.find(rule => rule.id === item.ruleId)?.name || 'Notification';
   const filtered = notifications.data.filter(item => (filter === 'ALL' || item.status === filter) && [name(item), notificationDevice(item, devices, operations.scope)?.name, ...item.values.map(value => value.label + ' ' + value.value)].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
   return <FlatList data={filtered.slice(0, limit)} keyExtractor={item => item.id} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
-    refreshControl={<RefreshControl refreshing={notifications.busy} onRefresh={operations.refresh} tintColor="#83AF23" />}
-    ListHeaderComponent={<View style={styles.stack}><Text accessibilityRole="header" style={styles.title}>Notifications</Text><Text style={styles.caption}>Project alerts, newest first. Refreshes every minute while the app is active.</Text>
+    refreshControl={<RefreshControl refreshing={notifications.busy} onRefresh={operations.refresh} tintColor="#8BAE41" />}
+    ListHeaderComponent={<View style={styles.stack}><Text accessibilityRole="header" style={styles.title}>Notifications</Text>
       <TextInput accessibilityLabel="Search notifications" value={query} onChangeText={value => { setQuery(value); setLimit(30); }} placeholder="Search notifications or devices" style={styles.search} autoCorrect={false} />
-      <View style={styles.chips}>{(['ALL', 'ACTIVE', 'ACKNOWLEDGED', 'ARCHIVED'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: filter === value }} onPress={() => { setFilter(value); setLimit(30); }} style={[styles.chip, filter === value && styles.selected]}><Text style={styles.link}>{human(value)}</Text></Pressable>)}</View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Notification filters" accessibilityState={{ expanded: filtersOpen }} onPress={() => setFiltersOpen(value => !value)} style={styles.button}><Text style={styles.link}>Filter: {human(filter)}</Text></Pressable>
+      {filtersOpen && <View style={styles.chips}>{(['ALL', 'ACTIVE', 'ACKNOWLEDGED', 'ARCHIVED'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: filter === value }} onPress={() => { setFilter(value); setLimit(30); }} style={[styles.chip, filter === value && styles.selected]}><Text style={styles.link}>{human(value)}</Text></Pressable>)}</View>}
       {!!notifications.error && <Feedback title="Unable to refresh notifications" message={notifications.error + (notifications.data.length ? ' Showing the last loaded notifications.' : '')} onRetry={operations.refresh} />}
       {!!rules.error && <Text style={styles.caption}>Rule names could not be loaded. Notification details remain available.</Text>}
       <Text style={styles.caption}>{filtered.length} notifications</Text>
     </View>}
     renderItem={({ item }) => {
       const device = notificationDevice(item, devices, operations.scope);
-      return <View style={liveStyles.card}><View style={styles.row}><Text style={[styles.badge, item.status === 'ACTIVE' && { color: '#94621B' }]}>{human(item.status)}</Text><Text style={styles.caption}>{formatTime(item.timestamp)}</Text></View>
-        <Text style={styles.cardTitle}>{name(item)}</Text>{item.count > 1 && <Text style={styles.caption}>Triggered {item.count} times</Text>}
-        {item.values.map((value, index) => <DetailRow key={index} label={device?.readings.find(reading => reading.id === value.outputId)?.title || value.label || 'Output'} value={value.value || value.label || 'Not reported'} />)}
-        {device ? <Pressable accessibilityRole="button" onPress={() => onDevice(device)} style={styles.deviceLink}><Text style={styles.link}>{device.name}</Text><MaterialCommunityIcons name="arrow-right" size={20} color="#6D941B" /></Pressable>
-          : <Text style={styles.caption}>{item.deviceId ? 'The linked device is not available in this project.' : 'Project-level notification'}</Text>}
-      </View>;
+      return <Pressable accessibilityRole={device ? "button" : undefined} accessibilityLabel={device ? name(item) + ". Open " + device.name : undefined} disabled={!device} onPress={() => device && onDevice(device)} style={styles.notificationRow}>
+        <View style={[styles.notificationIcon, { backgroundColor: item.status === 'ACTIVE' ? '#FCE9DF' : '#EFF5E4' }]}><MaterialCommunityIcons name="bell-outline" size={22} color={item.status === 'ACTIVE' ? '#F07556' : '#8BAE41'} /></View>
+        <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.notificationTitle}>{name(item)}</Text>
+          {item.values.map((value, index) => <Text key={index} style={styles.caption}>{device?.readings.find(reading => reading.id === value.outputId)?.title || value.label || 'Output'}: {value.value || value.label || 'Not reported'}</Text>)}
+          <Text style={styles.caption}>{device?.name || 'Project notification'}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4, maxWidth: 85 }}><View style={styles.notificationCount}><Text style={{ color: 'white', fontSize: 11 }}>{item.count}</Text></View><Text accessibilityLabel={formatTime(item.timestamp)} style={styles.notificationTime}>{item.timestamp ? new Date(item.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : 'Not reported'}</Text><Text style={styles.caption}>{human(item.status)}</Text></View>
+      </Pressable>;
+
     }}
     ListEmptyComponent={notifications.busy && !notifications.data.length ? <Feedback busy /> : !notifications.error ? <Feedback title="No notifications" message={query || filter !== 'ALL' ? 'Try another search or status.' : 'No alerts have been returned for this project.'} /> : null}
     ListFooterComponent={limit < filtered.length ? <Pressable accessibilityRole="button" onPress={() => setLimit(value => value + 30)} style={styles.button}><Text style={styles.link}>Load more</Text></Pressable> : null} />;
@@ -78,18 +83,19 @@ export function ConnectedAutomation({ operations, devices, onDevice }: { operati
   const [onlyActive, setOnlyActive] = useState(false);
   const [selectedId, setSelectedId] = useState('');
   const [limit, setLimit] = useState(30);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { rules } = operations;
   const selected = rules.data.find(rule => rule.id === selectedId);
   const filtered = rules.data.filter(rule => (!onlyActive || rule.active) && rule.name.toLowerCase().includes(query.toLowerCase().trim()));
   return <View style={{ flex: 1 }}><FlatList data={filtered.slice(0, limit)} keyExtractor={item => item.id} contentContainerStyle={styles.content}
-    refreshControl={<RefreshControl refreshing={rules.busy} onRefresh={operations.refresh} tintColor="#83AF23" />}
+    refreshControl={<RefreshControl refreshing={rules.busy} onRefresh={operations.refresh} tintColor="#8BAE41" />}
     ListHeaderComponent={<View style={styles.stack}><Text accessibilityRole="header" style={styles.title}>Automation</Text><Text style={styles.caption}>Configured rules, target devices, and run history.</Text>
       <ResponsiveGrid minimumWidth={140} maximumColumns={3}>{[['Rules', rules.data.length], ['Enabled', rules.data.filter(rule => rule.active).length], ['Command steps', rules.data.reduce((sum, rule) => sum + rule.actions.length, 0)]].map(([label, value]) => <View key={label} style={liveStyles.card}><Text style={styles.metric}>{value}</Text><Text style={styles.caption}>{label}</Text></View>)}</ResponsiveGrid>
       <TextInput accessibilityLabel="Search automation rules" value={query} onChangeText={value => { setQuery(value); setLimit(30); }} placeholder="Search rules" autoCorrect={false} style={styles.search} />
       <View style={styles.chips}>{[false, true].map(value => <Pressable key={String(value)} accessibilityRole="button" accessibilityState={{ selected: onlyActive === value }} onPress={() => { setOnlyActive(value); setLimit(30); }} style={[styles.chip, onlyActive === value && styles.selected]}><Text style={styles.link}>{value ? 'Enabled' : 'All rules'}</Text></Pressable>)}</View>
       {!!rules.error && <Feedback title="Unable to refresh rules" message={rules.error + (rules.data.length ? ' Showing previously loaded rules.' : '')} onRetry={operations.refresh} />}
     </View>}
-    renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => setSelectedId(item.id)} style={liveStyles.card}><View style={styles.row}><Text style={styles.badge}>{item.active ? 'Enabled' : 'Disabled'}</Text><MaterialCommunityIcons name="chevron-right" size={22} color="#83AF23" /></View><Text style={styles.cardTitle}>{item.name}</Text><Text style={styles.caption}>{item.triggers.map(human).join(', ') || 'Trigger not reported'}</Text><Text style={styles.caption}>{item.conditions.length} conditions / {item.actions.length} command steps / {item.deviceIds.length} linked devices</Text></Pressable>}
+    renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => setSelectedId(item.id)} style={liveStyles.card}><View style={styles.row}><Text style={styles.badge}>{item.active ? 'Enabled' : 'Disabled'}</Text><MaterialCommunityIcons name="chevron-right" size={22} color="#8BAE41" /></View><Text style={styles.cardTitle}>{item.name}</Text><Text style={styles.caption}>{item.triggers.map(human).join(', ') || 'Trigger not reported'}</Text><Text style={styles.caption}>{item.conditions.length} conditions / {item.actions.length} command steps / {item.deviceIds.length} linked devices</Text></Pressable>}
     ListEmptyComponent={rules.busy && !rules.data.length ? <Feedback busy /> : !rules.error ? <Feedback title="No rules found" message={query || onlyActive ? 'Try another search or filter.' : 'No automation or alert rules are configured for this project.'} /> : null}
     ListFooterComponent={limit < filtered.length ? <Pressable accessibilityRole="button" onPress={() => setLimit(value => value + 30)} style={styles.button}><Text style={styles.link}>Load more rules</Text></Pressable> : null} />
     <InfoDialog visible={!!selected} title={selected?.name || 'Rule'} onClose={() => setSelectedId('')}>
@@ -106,11 +112,12 @@ export function ConnectedAutomation({ operations, devices, onDevice }: { operati
   </View>;
 }
 const styles = StyleSheet.create({
+  notificationTime: { fontSize: 11, color: '#999999', lineHeight: 16 }, notificationRow: { flexDirection: 'row', gap: 12, backgroundColor: 'white', padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEEEEE' }, notificationIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, notificationTitle: { fontSize: 14, lineHeight: 21, fontWeight: '600', color: '#303030' }, notificationCount: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: '#8BAE41', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   content: { padding: 16, paddingBottom: 28, gap: 12 }, stack: { gap: 12 }, title: { color: '#303030', fontSize: 22, fontWeight: '600' },
   caption: { color: '#777777', fontSize: 12, lineHeight: 19 }, row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   search: { minHeight: 48, padding: 12, backgroundColor: 'white', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 9, color: '#303030', fontSize: 14 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, chip: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 22, borderWidth: 1, borderColor: '#DDDDDD', backgroundColor: 'white' },
-  selected: { borderColor: '#83AF23', backgroundColor: '#F1F6E7' }, link: { color: '#6D941B', fontSize: 13, fontWeight: '500', flexShrink: 1 },
+  selected: { borderColor: '#8BAE41', backgroundColor: '#F1F6E7' }, link: { color: '#6D941B', fontSize: 13, fontWeight: '500', flexShrink: 1 },
   badge: { color: '#6D941B', fontSize: 12, fontWeight: '600' }, cardTitle: { color: '#303030', fontSize: 16, lineHeight: 24, fontWeight: '600', marginTop: 8 },
   deviceLink: { minHeight: 44, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   button: { minHeight: 44, padding: 10, justifyContent: 'center' }, disabled: { opacity: 0.35 }, metric: { color: '#303030', fontSize: 25, fontWeight: '600' },

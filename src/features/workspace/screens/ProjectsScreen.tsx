@@ -25,7 +25,7 @@ export function ProjectsScreen({ user, workspace, onOpen, onOrganizations, onPro
   return <View style={styles.page} onLayout={onLayout}>
     <FlatList key={columns} data={projects} numColumns={columns} keyExtractor={project => project.id}
       columnWrapperStyle={columns > 1 ? { gap: 16 } : undefined} contentContainerStyle={styles.list}
-      keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={busy} onRefresh={workspace.refresh} tintColor="#83AF23" />}
+      keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={busy} onRefresh={workspace.refresh} tintColor="#8BAE41" />}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.brandRow}>
           <Image source={require('../../../../assets/images/ginjer-logo.png')} resizeMode="contain" style={styles.logo} accessibilityLabel="Ginjer" />
@@ -40,7 +40,7 @@ export function ProjectsScreen({ user, workspace, onOpen, onOrganizations, onPro
             <Text numberOfLines={1} style={styles.organizationName}>{workspace.account?.name || 'Choose organization'}</Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color="#777777" />
           </Pressable>
-          {busy ? <View style={styles.refresh}><ActivityIndicator color="#83AF23" accessibilityLabel="Loading projects" /></View>
+          {busy ? <View style={styles.refresh}><ActivityIndicator color="#8BAE41" accessibilityLabel="Loading projects" /></View>
             : <ActionIcon icon="refresh" label="Refresh projects" onPress={workspace.refresh} />}
         </View>
         <View style={[styles.toolbar, isTablet && styles.tabletToolbar]}>

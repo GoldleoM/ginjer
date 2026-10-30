@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AuthUser } from '../../auth/types';
 import { createAccountApi, type AccountIdentity } from '../../auth/services/accountApi';
 import { graphql, authenticatedGraphql } from '../../../services/graphql';
 import { updateSessionIdentity } from '../../../services/session';
 import { InfoDialog } from './WorkspaceUI';
+import { ProfileAvatar, ProfileField } from '../../profile/components/ProfileUI';
 
 const api = createAccountApi(graphql, authenticatedGraphql);
 export function EditAccountDialog({ user, onClose, onSaved }: { user: AuthUser; onClose: () => void; onSaved: (identity: AccountIdentity) => void }) {
@@ -26,14 +27,15 @@ export function EditAccountDialog({ user, onClose, onSaved }: { user: AuthUser; 
     finally { submitting.current = false; if (mounted.current) setBusy(false); }
   }
   return <InfoDialog visible title="Edit profile" onClose={() => { if (!submitting.current) onClose(); }}><View style={styles.form}>
-    <Text style={styles.caption}>{user.emailId}</Text>
-    <Text style={styles.label}>First name</Text><TextInput accessibilityLabel="First name" value={firstName} onChangeText={setFirstName} editable={!busy} autoCapitalize="words" maxLength={80} style={styles.input} />
-    <Text style={styles.label}>Last name</Text><TextInput accessibilityLabel="Last name" value={lastName} onChangeText={setLastName} editable={!busy} autoCapitalize="words" maxLength={80} style={styles.input} />
+    <View style={{ alignItems: 'center', marginBottom: 16 }}><ProfileAvatar firstName={firstName} lastName={lastName} variant="default" /></View>
+    <ProfileField label="First name" icon="account-outline" value={firstName} onChangeText={setFirstName} editable={!busy} autoCapitalize="words" maxLength={80} />
+    <ProfileField label="Last name" icon="account-outline" value={lastName} onChangeText={setLastName} editable={!busy} autoCapitalize="words" maxLength={80} />
+    <ProfileField label="Email" icon="email-outline" value={user.emailId} editable={false} />
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
     <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} disabled={busy} onPress={save} style={[styles.save, busy && { opacity: 0.6 }]}>{busy ? <ActivityIndicator color="white" /> : <Text style={styles.saveText}>Save changes</Text>}</Pressable>
   </View></InfoDialog>;
 }
-const styles = StyleSheet.create({ form: { gap: 12 }, caption: { color: '#777777', fontSize: 13, lineHeight: 20 }, label: { color: '#555555', fontSize: 13 },
+const styles = StyleSheet.create({ form: { gap: 20 }, caption: { color: '#777777', fontSize: 13, lineHeight: 20 }, label: { color: '#555555', fontSize: 13 },
   input: { minHeight: 48, borderWidth: 1, borderColor: '#CCCCCC', borderRadius: 8, padding: 12, color: '#303030', fontSize: 15 }, error: { color: '#B42318', fontSize: 14, lineHeight: 22 },
-  save: { minHeight: 48, borderRadius: 9, backgroundColor: '#83AF23', alignItems: 'center', justifyContent: 'center', padding: 12, marginTop: 8 }, saveText: { color: 'white', fontWeight: '600' },
+  save: { minHeight: 48, borderRadius: 9, backgroundColor: '#8BAE41', alignItems: 'center', justifyContent: 'center', padding: 12, marginTop: 8 }, saveText: { color: 'white', fontWeight: '600' },
 });

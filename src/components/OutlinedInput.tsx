@@ -63,13 +63,13 @@ export function OutlinedInput({
 
 const styles = StyleSheet.create({
   box: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: 8,
-    minHeight: 54,
+    minHeight: 50,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 18,
+    paddingHorizontal: 12,
     backgroundColor: theme.colors.background,
   },
   label: {
@@ -81,14 +81,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     paddingHorizontal: 4,
     color: "#666666",
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
     includeFontPadding: false,
   },
   input: {
     flex: 1,
     minWidth: 0,
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.text,
     paddingVertical: 14,
     backgroundColor: theme.colors.background,

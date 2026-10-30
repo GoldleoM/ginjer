@@ -7,9 +7,10 @@ import type { Coordinates } from '../types';
 import { WorkspacePicker } from './WorkspaceUI';
 import { MapTile } from './MapTile';
 
+const markerColor = (device: Device) => { const tone = device.readings.find(reading => reading.id === device.mainOutputId)?.tone; return tone === 'red' ? '#F36C59' : tone === 'yellow' ? '#E5B83B' : tone === 'green' ? '#8BAE41' : '#6FA9DD'; };
 const tileTemplate = process.env.EXPO_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-export function LiveMap({ devices, selectedId, onSelect, onBackground, onInteractionChange }: {
-  devices: Device[]; selectedId?: string; onSelect: (device: Device) => void; onBackground?: () => void; onInteractionChange?: (active: boolean) => void;
+export function LiveMap({ devices, selectedId, onSelect, onBackground, onInteractionChange, controlsTop = 12 }: {
+  devices: Device[]; selectedId?: string; onSelect: (device: Device) => void; onBackground?: () => void; onInteractionChange?: (active: boolean) => void; controlsTop?: number;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<{ center: Coordinates; zoom: number }>({ center: { lat: 0, lng: 0 }, zoom: 3 });
@@ -115,12 +116,12 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground, onInterac
       accessibilityLabel={group.devices.length > 1 ? group.devices.length + ' devices at this location. Choose a device' : 'Show ' + group.devices[0].name}
       accessibilityState={{ selected: group.devices.some(device => device.id === selectedId) }}
       onPress={() => group.devices.length > 1 ? setCluster(group.devices) : onSelect(group.devices[0])}
-      style={[styles.marker, { left: group.x - 24, top: group.y - 24 }, group.devices.some(device => device.id === selectedId) && styles.selected]}>
-      {group.devices.length > 1 ? <Text style={styles.cluster}>{group.devices.length}</Text>
-        : <MaterialCommunityIcons name={group.devices[0].icon ?? 'router-wireless'} size={24} color="white" />}
+      style={[styles.marker, { backgroundColor: markerColor(group.devices[0]) + '33', left: group.x - 24, top: group.y - 24 }, group.devices.some(device => device.id === selectedId) && styles.selected]}>
+      <View style={[styles.markerCore, { backgroundColor: markerColor(group.devices[0]) }]}>{group.devices.length > 1 ? <Text style={styles.cluster}>{group.devices.length}</Text>
+        : <MaterialCommunityIcons name={group.devices[0].icon ?? 'router-wireless'} size={20} color="white" />}</View>
     </Pressable>)}
     <View accessible={false} style={styles.gestureSurface} {...pan.panHandlers} />
-    <View style={styles.controls}>
+    <View style={[styles.controls, { top: controlsTop }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" disabled={view.zoom === MAX_ZOOM} onPress={() => zoomBy(1)} style={styles.control}><MaterialCommunityIcons name="plus" size={24} color="#303030" /></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" disabled={view.zoom === MIN_ZOOM} onPress={() => zoomBy(-1)} style={styles.control}><MaterialCommunityIcons name="minus" size={24} color="#303030" /></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Fit all devices on map" onPress={() => setView(fitMap(valid.map(device => device.coordinates!), size.width, size.height))} style={styles.control}><MaterialCommunityIcons name="fit-to-screen-outline" size={22} color="#6D941B" /></Pressable>
@@ -134,8 +135,9 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground, onInterac
 const styles = StyleSheet.create({
   gestureSurface: { ...StyleSheet.absoluteFillObject, zIndex: 4, elevation: 4 },
   map: { flex: 1, overflow: 'hidden', backgroundColor: '#E4EDE9' },
-  marker: { position: 'absolute', width: 48, height: 48, borderRadius: 24, backgroundColor: '#6FA9DD', borderWidth: 3, borderColor: '#FFFFFFCC', alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  selected: { backgroundColor: '#83AF23', borderColor: 'white' }, cluster: { fontSize: 20, fontWeight: '600', color: 'white' },
+  marker: { position: 'absolute', width: 48, height: 48, borderRadius: 24, backgroundColor: '#6FA9DD33', borderWidth: 2, borderColor: '#FFFFFF99', alignItems: 'center', justifyContent: 'center', elevation: 3 },
+  markerCore: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  selected: { borderColor: '#8BAE41' }, cluster: { fontSize: 20, fontWeight: '600', color: 'white' },
   controls: { zIndex: 5, position: 'absolute', right: 12, top: 12, backgroundColor: 'white', borderRadius: 8, elevation: 4, overflow: 'hidden' },
   control: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#EEEEEE' },
   attribution: { zIndex: 5, elevation: 5, position: 'absolute', right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 4, backgroundColor: '#FFFFFFEE' },

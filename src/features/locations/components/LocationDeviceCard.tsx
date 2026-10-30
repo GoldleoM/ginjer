@@ -29,7 +29,7 @@ export function LocationDeviceCard({ device, top, maxHeight, onDetails, onLayout
   </View>;
 }
 const styles = StyleSheet.create({
-  card: { position: 'absolute', left: 12, right: 12, zIndex: 4, maxWidth: 520, overflow: 'hidden',
+  card: { position: 'absolute', left: 12, right: 12, zIndex: 9, maxWidth: 520, overflow: 'hidden',
     backgroundColor: 'white', borderRadius: 9, shadowColor: '#000000', shadowOpacity: 0.13, shadowRadius: 8, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
   cardContent: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 5, minHeight: 124 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },

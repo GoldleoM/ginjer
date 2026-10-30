@@ -35,6 +35,6 @@ export function HistoryTrends({ packets, device }: { packets: DevicePacket[]; de
   </View>;
 }
 const styles = StyleSheet.create({ title: { color: '#303030', fontSize: 17, fontWeight: '600' }, caption: { color: '#777777', fontSize: 12, lineHeight: 19 },
-  chip: { minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 22, justifyContent: 'center' }, selected: { backgroundColor: '#F1F6E7', borderColor: '#83AF23' }, link: { color: '#6D941B', fontSize: 13 },
+  chip: { minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 22, justifyContent: 'center' }, selected: { backgroundColor: '#F1F6E7', borderColor: '#8BAE41' }, link: { color: '#6D941B', fontSize: 13 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, value: { color: '#303030', fontSize: 16, fontWeight: '600', lineHeight: 24 },
 });

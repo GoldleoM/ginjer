@@ -4,7 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DeviceIcon, Tone } from '../types';
 
-export const colors = { text: '#2B2B2B', muted: '#858585', light: '#AAAAAA', green: '#83AF23', background: '#F8F8F8' };
+export const colors = { text: '#2B2B2B', muted: '#858585', light: '#AAAAAA', green: '#8BAE41', background: '#F8F8F8' };
 export const tones = {
   neutral: { background: '#EEEEEE', foreground: '#777777' },
   green: { background: '#EAF5DC', foreground: '#9BD14F' },

@@ -18,7 +18,7 @@ function SelectField({ label, value, items, onChange, disabled }: { label: strin
       <Text style={styles.fieldValue}>{items.find(item => item.id === value)?.name || 'Select'}</Text><MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={20} color="#777777" />
     </Pressable>
     {open && !disabled && <View style={styles.dropdown}>{items.map(item => <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: value === item.id }} onPress={() => { onChange(item.id); setOpen(false); }} style={[styles.option, value === item.id && styles.selected]}>
-      <Text style={styles.fieldValue}>{item.name}</Text>{value === item.id && <MaterialCommunityIcons name="check" size={18} color="#83AF23" />}
+      <Text style={styles.fieldValue}>{item.name}</Text>{value === item.id && <MaterialCommunityIcons name="check" size={18} color="#8BAE41" />}
     </Pressable>)}</View>}
   </View>;
 }
@@ -70,7 +70,11 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
     <SafeAreaView style={[styles.overlay, isTablet && { justifyContent: 'center', padding: 24 }]} edges={['top', 'bottom', 'left', 'right']}>
       <Pressable accessibilityLabel="Close downlink panel" accessibilityRole="button" onPress={close} style={StyleSheet.absoluteFill} disabled={sending} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet} accessibilityViewIsModal>
-        <View style={styles.header}><Text accessibilityRole="header" style={styles.title}>Send Downlink to {device.name}</Text><ActionIcon icon="close" label="Close downlink panel" onPress={close} disabled={sending} /></View>
+        <View style={styles.sheetIntro}><View style={styles.handle} />
+          <View style={styles.header}><View style={{ width: 44 }} /><Text accessibilityRole="header" style={styles.title}>Send Downlink</Text><ActionIcon icon="close" label="Close downlink panel" onPress={close} disabled={sending} /></View>
+          <Text style={styles.subtitle}>{device.name}</Text>
+          <MaterialCommunityIcons name="cloud-download-outline" size={58} color="#8BAE41" style={{ marginLeft: 16, marginTop: 8 }} />
+        </View>
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1 }} contentContainerStyle={styles.content}>
           {device.deleted ? <Feedback title="Device archived" message="Commands are available for current devices." /> : loading ? <Feedback busy /> : loadError ? <Feedback title="Unable to load controllers" message={loadError} onRetry={() => setRevision(current => current + 1)} /> : !options?.interfaces.length ? <Feedback title="No downlink controllers" message="No supported controllers are available for this device." /> : <>
             <SelectField label="Downlink Controller" items={options.interfaces} value={interfaceId} onChange={id => { setInterfaceId(id); setValue(''); }} disabled={attempted} />
@@ -99,16 +103,16 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
   </Modal>;
 }
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: '#00000099', justifyContent: 'flex-end', alignItems: 'center' },
-  sheet: { width: '100%', maxWidth: 600, maxHeight: '95%', backgroundColor: 'white', borderRadius: 20, overflow: 'hidden' },
-  header: { flexDirection: 'row', padding: 20, alignItems: 'center', gap: 8 }, title: { flex: 1, fontSize: 21, lineHeight: 29, color: '#83AF23', fontWeight: '600' },
-  content: { padding: 20, paddingTop: 8, gap: 16 }, field: { borderWidth: 1, borderColor: '#BBBBBB', borderRadius: 12, paddingHorizontal: 14, paddingTop: 8 },
+  overlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end', alignItems: 'center' },
+  sheet: { width: '100%', maxWidth: 600, maxHeight: '95%', backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden' },
+  sheetIntro: { backgroundColor: '#F4F7EA', paddingBottom: 12 }, handle: { width: 38, height: 4, backgroundColor: '#D4D6CF', borderRadius: 3, alignSelf: 'center', marginTop: 8 }, header: { flexDirection: 'row', paddingHorizontal: 12, paddingTop: 8, alignItems: 'center' }, title: { flex: 1, textAlign: 'center', fontSize: 18, lineHeight: 25, color: '#2B2B2B', fontWeight: '600' }, subtitle: { textAlign: 'center', fontSize: 12, color: '#858585', paddingHorizontal: 20 },
+  content: { padding: 20, paddingTop: 20, gap: 16 }, field: { borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 8, paddingHorizontal: 14, paddingTop: 8 },
   label: { color: '#739C25', fontSize: 12, lineHeight: 18 }, input: { paddingVertical: 10, minHeight: 44, fontSize: 16, color: '#303030' },
   select: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 10 }, fieldValue: { flex: 1, color: '#303030', fontSize: 15, lineHeight: 21 },
   dropdown: { borderTopWidth: 1, borderTopColor: '#EEEEEE' }, option: { minHeight: 44, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }, selected: { backgroundColor: '#F3F7EA' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, column: { flex: 1, minWidth: 120 },
   keyRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }, keyText: { color: '#777777', fontSize: 12, flexShrink: 1 }, changeKey: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   link: { color: '#739C25', fontSize: 14, fontWeight: '500' }, error: { color: '#B42318', lineHeight: 22, fontSize: 14 }, responseTitle: { color: '#303030', fontWeight: '600', fontSize: 14, lineHeight: 22 }, responseText: { color: '#62685D', fontSize: 13, lineHeight: 20 }, response: { gap: 4, padding: 12, backgroundColor: '#F3F7EA', borderRadius: 8 },
-  footer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, padding: 20 }, cancel: { minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#AFC879', borderRadius: 12 },
-  send: { minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#83AF23', borderRadius: 12 }, sendText: { color: 'white', fontWeight: '600' },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, padding: 16 }, cancel: { flex: 1, minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#AFC879', borderRadius: 12 },
+  send: { flex: 1, minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#8BAE41', borderRadius: 12 }, sendText: { color: 'white', fontWeight: '600' },
 });
