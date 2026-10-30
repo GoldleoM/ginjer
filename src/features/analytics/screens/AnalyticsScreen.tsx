@@ -7,9 +7,9 @@ import { theme } from '../../../theme';
 import { formatMetricTime, MetricCard } from '../components/MetricCard';
 import type { AnalyticsDashboard, AnalyticsMetric, AnalyticsRepository, DashboardOption } from '../types';
 
-export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, onDevices, onProfile }: {
+export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, onDevices, onProfile, onLocations }: {
   repository: AnalyticsRepository; dashboardId: string; onDashboardChange: (id: string) => void;
-  onDevices: () => void; onProfile: () => void;
+  onDevices: () => void; onLocations: () => void; onProfile: () => void;
 }) {
   const [options, setOptions] = useState<DashboardOption[]>([]);
   const [dashboard, setDashboard] = useState<AnalyticsDashboard | null>(null);
@@ -63,7 +63,7 @@ export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, on
           : dashboard.metrics.length ? dashboard.metrics.map(metric => <MetricCard key={metric.id} metric={metric} onInfo={() => setInfo(metric)} />)
             : <View style={styles.feedback}><MaterialCommunityIcons name="chart-box-outline" size={38} color="#AAAAAA" /><Text style={styles.emptyTitle}>No readings yet</Text><Text style={styles.emptyText}>This dashboard has no metrics to display.</Text></View>}
       </ScrollView>
-      <BottomTabs active="Analytics" onDevices={onDevices} onAnalytics={() => setExpanded(false)} onProfile={onProfile} />
+      <BottomTabs active="Analytics" onLocations={onLocations} onDevices={onDevices} onAnalytics={() => setExpanded(false)} onProfile={onProfile} />
       {expanded && <Pressable accessibilityRole="button" accessibilityLabel="Close dashboard selector" onPress={() => setExpanded(false)} style={styles.dropdownBackdrop} />}
     </View>
     <Modal visible={info !== null} transparent animationType="fade" onRequestClose={() => setInfo(null)}>

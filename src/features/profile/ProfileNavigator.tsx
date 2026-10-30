@@ -7,8 +7,8 @@ import { EditProfileScreen } from './screens/EditProfileScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import type { Organization, Profile, ProfileRepository, Project } from './types';
 
-export function ProfileNavigator({ repository, onDevices, onAnalytics, onLogout }: {
-  repository: ProfileRepository; onDevices: () => void; onAnalytics: () => void; onLogout: () => void;
+export function ProfileNavigator({ repository, onDevices, onLocations, onAnalytics, onLogout }: {
+  repository: ProfileRepository; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onLogout: () => void;
 }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -72,7 +72,7 @@ export function ProfileNavigator({ repository, onDevices, onAnalytics, onLogout 
     <ProfileScreen profile={profile} organizationName={organizations.find(item => item.id === profile.organizationId)?.name ?? ''}
       projectName={projects.find(item => item.id === profile.projectId)?.name} notice={notice}
       onEdit={() => { setNotice(''); setError(''); setEditing(true); }} onOrganizations={() => setSheet('organizations')} onProjects={() => setSheet('projects')}
-      onLogout={onLogout} onDevices={onDevices} onAnalytics={onAnalytics} />
+      onLogout={onLogout} onLocations={onLocations} onDevices={onDevices} onAnalytics={onAnalytics} />
     {!!error && <View style={styles.error}><Text accessibilityRole="alert" style={profileStyles.error}>{error}</Text><Pressable accessibilityRole="button" accessibilityLabel="Dismiss error" onPress={() => setError('')} style={styles.action}><Text>Dismiss</Text></Pressable></View>}
     <SelectionSheet visible={sheet !== null} title={sheet === 'projects' ? 'Project' : 'Organization'}
       items={sheet === 'projects' ? projects.filter(item => item.organizationId === profile.organizationId) : organizations}

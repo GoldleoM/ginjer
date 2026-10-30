@@ -11,18 +11,16 @@ const tabs: { label: Tab; icon: ComponentProps<typeof MaterialCommunityIcons>['n
   { label: 'Profile', icon: 'account-outline' },
 ];
 
-export function BottomTabs({ active, onDevices, onAnalytics, onProfile }: {
-  active: 'Devices' | 'Analytics' | 'Profile'; onDevices: () => void; onAnalytics: () => void; onProfile: () => void;
+export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProfile }: {
+  active: Tab; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onProfile: () => void;
 }) {
+  const actions: Record<Tab, () => void> = { Devices: onDevices, Locations: onLocations, Analytics: onAnalytics, Profile: onProfile };
   return <View accessibilityRole="tablist" style={styles.tabs}>
     {tabs.map(tab => {
-      const disabled = tab.label === 'Locations';
       const selected = active === tab.label;
       const color = selected ? theme.colors.primary : '#AAAAAA';
-      return <Pressable key={tab.label} accessibilityRole="tab"
-        accessibilityLabel={disabled ? tab.label + ', coming soon' : tab.label}
-        accessibilityState={{ selected, disabled }} disabled={disabled}
-        onPress={tab.label === 'Devices' ? onDevices : tab.label === 'Analytics' ? onAnalytics : onProfile}
+      return <Pressable key={tab.label} accessibilityRole="tab" accessibilityLabel={tab.label}
+        accessibilityState={{ selected }} onPress={actions[tab.label]}
         style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}>
         <MaterialCommunityIcons name={tab.icon} size={23} color={color} />
         <Text style={[styles.label, { color }]}>{tab.label}</Text>

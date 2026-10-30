@@ -5,9 +5,9 @@ import { BottomTabs } from '../../../components/BottomTabs';
 import { ProfileAvatar, ProfileMenuRow, profileColors, profileStyles } from '../components/ProfileUI';
 import type { Profile } from '../types';
 
-export function ProfileScreen({ profile, organizationName, projectName, notice, onEdit, onOrganizations, onProjects, onLogout, onDevices, onAnalytics }: {
+export function ProfileScreen({ profile, organizationName, projectName, notice, onEdit, onOrganizations, onProjects, onLogout, onDevices, onAnalytics, onLocations }: {
   profile: Profile; organizationName: string; projectName?: string; notice: string;
-  onEdit: () => void; onOrganizations: () => void; onProjects: () => void; onLogout: () => void; onDevices: () => void; onAnalytics: () => void;
+  onEdit: () => void; onOrganizations: () => void; onProjects: () => void; onLogout: () => void; onDevices: () => void; onLocations: () => void; onAnalytics: () => void;
 }) {
   return <SafeAreaView style={profileStyles.safe} edges={['top', 'bottom']}>
     <View style={profileStyles.shell}>
@@ -28,7 +28,7 @@ export function ProfileScreen({ profile, organizationName, projectName, notice, 
         </View>
         <View style={styles.logout}><ProfileMenuRow icon="logout" label="Logout" onPress={onLogout} destructive last /></View>
       </ScrollView>
-      <BottomTabs active="Profile" onDevices={onDevices} onAnalytics={onAnalytics} onProfile={() => {}} />
+      <BottomTabs active="Profile" onLocations={onLocations} onDevices={onDevices} onAnalytics={onAnalytics} onProfile={() => {}} />
     </View>
   </SafeAreaView>;
 }

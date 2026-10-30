@@ -17,7 +17,7 @@ Optionally copy `.env.example` to `.env` to override the public GraphQL endpoint
 
 ## Current behavior
 
-The app opens with the supplied sign-in design. Fields start empty. Login validates input and calls the documented SignIn operation, with loading, timeout and error feedback. Success opens the device list with clearly marked sample data. Device, profile and analytics API integration remain future work. Profile editing and organization/project selection currently use session-only sample data.
+The app opens with the supplied sign-in design. Fields start empty. Login validates input and calls the documented SignIn operation, with loading, timeout and error feedback. Success opens the device list with clearly marked sample data. Device, profile, analytics and locations API integration remain future work. Profile editing and organization/project selection currently use session-only sample data.
 
 Native tokens use Expo SecureStore. Browser tokens stay in memory and are cleared on refresh; passwords are never persisted. Automatic session restoration is not implemented. No production credentials or collection tokens are included.
 
@@ -31,7 +31,7 @@ Run `npm run web` and select **Preview device screens** on the sign-in page. No 
 - Select View Map or the marker to display the sample location card; close it with the X.
 - Use Back to return to the list, or Exit preview to return to sign-in.
 
-Device thumbnails, the map background and location illustration come from the supplied Figma archive. All device values and timestamps are fixtures in `src/features/devices/data/demoDevices.ts`. The map is a static design asset, not a live map: its reference geography does not match the sample Central Park coordinates. Directions, notifications and Locations integrations are deferred; the Locations tab is marked as coming soon. Analytics uses sample dashboards. No device commands or device API requests are sent.
+Device thumbnails, the map background and location illustration come from the supplied Figma archive. All device values and timestamps are fixtures in `src/features/devices/data/demoDevices.ts`. The map is a static design asset, not a live map: its reference geography does not match the sample Central Park coordinates. Directions and notifications integrations are deferred. Analytics and Locations use sample data. No device commands or device API requests are sent.
 
 ## Preview profile pages
 
@@ -57,12 +57,26 @@ From **Preview device screens**, select **Analytics** in the bottom navigation.
 
 Typed fixtures are in `src/features/analytics/data/demoAnalytics.ts`. Screens use the asynchronous `AnalyticsRepository` interface; replace `demoAnalyticsRepository` with backend calls when the dashboard endpoints are ready. The gauge uses native views and adds no chart dependencies.
 
+## Preview locations
+
+From **Preview device screens**, select **Locations** in the bottom navigation.
+
+- The static India map is original artwork extracted from the supplied Figma archive.
+- Ten sample markers reproduce the reference's bin, temperature, water, and cold-chain symbols with colored halos.
+- Search by device name or hardware ID. Filters show bin sensors, temperature sensors, other sensors, or devices needing attention.
+- Tap a marker to open its device card with thumbnail, name, ID, activity, and reading badges. Tap the same marker or the map to close it.
+- The card arrow opens the existing device-details page; Back returns to the map with its search, filter, and selection intact.
+- The bell opens an empty sample-notifications dialog. Loading, retry, and empty-result states are supported.
+
+Fixtures live in `src/features/locations/data/demoLocations.ts`; the asynchronous `LocationsRepository` interface supplies devices separately from the UI. Positions are normalized display points tied to the reference image crop, not GPS coordinates. Live map tiles, pan/zoom, and real geolocation are future work and will require replacing the static map renderer as well as the data adapter. No map service or location permission is needed for this preview.
+
 ## Structure
 
 - `App.tsx`: Expo entry point.
 - `src/app/`: application composition and authenticated state.
 - `src/features/auth/`: sign-in screen, validation, service and types.
 - `src/features/devices/`: device page navigation, list/detail screens, reusable UI, typed sample fixtures.
+- `src/features/locations/`: static map preview, device markers/cards, local search/filtering, fixtures, and repository interface.
 - `src/features/analytics/`: dashboard screen, gauge/status cards, typed sample dashboards, and repository interface.
 - `src/features/profile/`: profile/edit screens, searchable selection sheets, validation, typed fixtures, and repository interface.
 - `src/components/`: shared input components.
