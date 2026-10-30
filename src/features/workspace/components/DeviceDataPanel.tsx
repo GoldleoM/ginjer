@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import { ResponsiveGrid } from '../../../layout/responsive';
 import type { OutputDefinition } from '../services/deviceInspection';
-import { deviceDataFields, initialDataTab, type DataTab } from '../services/deviceData';
+import { deviceDataFields, initialDataTab, type DataField, type DataTab } from '../services/deviceData';
 
 export function DeviceDataPanel({ device, mainOutputId, definitions, loading = false }: { device: Device; mainOutputId?: string; definitions?: OutputDefinition[]; loading?: boolean }) {
   const [selectedTab, setTab] = useState<DataTab | null>(null);
@@ -22,14 +22,27 @@ export function DeviceDataPanel({ device, mainOutputId, definitions, loading = f
       <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{value === 'status' ? 'Status' : value === 'configuration' ? 'Configuration' : 'Attributes'}</Text>
       <Text style={[styles.count, tab === value && styles.activeTabText]}>{groups[value].length}</Text>
     </Pressable>)}</View>
-    {fields.length ? <ResponsiveGrid minimumWidth={160} maximumColumns={6} gap={12}>{fields.map(field => <View key={field.id} style={styles.card}>
+    {fields.length ? <EqualHeightCards key={tab} fields={fields} showIds={showIds} /> : <View style={styles.empty}>{loading ? <ActivityIndicator color="#83AF23" /> : <MaterialCommunityIcons name="database-outline" size={26} color="#A7B38E" />}<Text style={styles.label}>{loading ? 'Loading device fields...' : tab === 'attributes' ? 'No attributes are available.' : 'No ' + (tab === 'configuration' ? 'configuration' : 'status') + ' fields are available.'}</Text></View>}
+  </View>;
+}
+// Measure only the natural content, not the equalized outer card. This lets
+// every card grow AND shrink when values, field IDs, text size, or width change.
+function EqualHeightCards({ fields, showIds }: { fields: DataField[]; showIds: boolean }) {
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const tallest = Math.max(112, ...fields.map(field => heights[field.id] || 0));
+  return <ResponsiveGrid minimumWidth={160} maximumColumns={6} gap={12}>{fields.map(field =>
+    <View key={field.id} style={[styles.card, { minHeight: tallest }]}>
+      <View onLayout={event => {
+        const height = Math.ceil(event.nativeEvent.layout.height) + 27; // Vertical padding + borders.
+        setHeights(previous => previous[field.id] === height ? previous : { ...previous, [field.id]: height });
+      }}>
       <View style={styles.cardHeader}><Text style={styles.name}>{field.name}</Text><MaterialCommunityIcons name={field.icon} size={21} color={field.color || '#8DA65B'} /></View>
       <Text selectable style={[styles.value, field.color ? { color: field.color } : undefined]}>{field.value || 'Not reported'}</Text>
       {!!field.label && field.label !== field.value && <Text style={styles.label}>{field.label}</Text>}
       {field.main && <View style={styles.badge}><View style={styles.dot} /><Text style={styles.badgeText}>Main output</Text></View>}
       {showIds && <Text selectable style={styles.fieldId}>ID: {field.id}</Text>}
-    </View>)}</ResponsiveGrid> : <View style={styles.empty}>{loading ? <ActivityIndicator color="#83AF23" /> : <MaterialCommunityIcons name="database-outline" size={26} color="#A7B38E" />}<Text style={styles.label}>{loading ? 'Loading device fields...' : tab === 'attributes' ? 'No attributes are available.' : 'No ' + (tab === 'configuration' ? 'configuration' : 'status') + ' fields are available.'}</Text></View>}
-  </View>;
+      </View>
+    </View>)}</ResponsiveGrid>;
 }
 const styles = StyleSheet.create({
   panel: { marginTop: 24, backgroundColor: 'white', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#F0F0F0', gap: 20 },
