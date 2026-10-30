@@ -86,7 +86,7 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
       {activeTab !== 'Notifications' && <NotificationBanner operations={operations} devices={workspace.devices} onDevice={setDetail} onNotifications={() => setTab('Notifications')} />}
     </>}
     <View style={{ flex: 1, minHeight: 0, minWidth: 0 }}>{body}</View>
-    <BottomTabs active={activeTab} onProjects={showProjects} projectSelected={!!workspace.project} onDevices={() => setTab('Devices')} onLocations={() => setTab('Locations')} onAnalytics={() => setTab('Analytics')} onProfile={() => setTab('Profile')} />
+    <BottomTabs active={activeTab} onDevices={() => setTab('Devices')} onLocations={() => setTab('Locations')} onAnalytics={() => setTab('Analytics')} onProfile={() => setTab('Profile')} />
   </View>
     {picker === 'organizations' && <WorkspacePicker title="Organizations" selectedId={workspace.accountId}
       busy={workspace.accountsLoading} error={workspace.accountsError} onRefresh={workspace.refreshAccounts}

@@ -17,3 +17,5 @@ Validation:
 - Also inspected Projects and the live device list on the connected Android tablet. Other native screens and physical downlink delivery were not retested in this theme change.
 
 Web visual checks used synthetic data and local map imagery; they sent no hardware commands. Local verification captures are in .preview/theme-qa (ignored by Git). Additional live features remain visible, so layouts are adapted from the references rather than pixel-identical copies.
+
+Navigation follow-up: removed Projects from the bottom bar. Devices, Locations, Analytics, and Profile remain equally spaced, including before project selection; project-specific tabs lead to Projects until a project is chosen. Project selection remains available from the header and Profile. Verified all four routes and tab geometry at 320x568, 375x667, 390x844, 430x932, 667x390, 768x1024, and 1024x768. Added explicit web selected-tab semantics. TypeScript, the 84-test suite, and all-platform exports passed.
