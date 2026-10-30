@@ -17,7 +17,7 @@ const connectivityLabels: Record<string, string> = { LORAWAN: 'LoRaWAN', WIFI: '
 const connectivityLabel = (value?: string) => connectivityLabels[value || ''] || value;
 
 function Metadata({ label, value }: { label: string; value: unknown }) {
-  return <DetailRow label={label} value={value === undefined || value === null || value === '' ? 'Not reported' : value} />;
+  return <View style={styles.metadata}><Text style={styles.label}>{label}</Text><Text selectable style={styles.metadataValue}>{value === undefined || value === null || value === '' ? 'Not reported' : String(value)}</Text></View>;
 }
 function PacketCard({ packet, device, latest = false }: { packet: DevicePacket; device: Device; latest?: boolean }) {
   const [expanded, setExpanded] = useState(false);
@@ -60,12 +60,13 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
 }) {
   const [tab, setTab] = useState<InspectionTab>('details');
   const [mapError, setMapError] = useState('');
+  const [moreDetails, setMoreDetails] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [downlinkOpen, setDownlinkOpen] = useState(false);
   const [historyView, setHistoryView] = useState<'packets' | 'trends'>('packets');
   const model = useDeviceInspection(device, tab, inspectionApi);
   const info = model.details.data;
   const mainOutputId = info?.mainOutputId || device.mainOutputId;
-  const mainOutput = mainOutputId ? device.readings.find(reading => reading.id === mainOutputId)?.title || info?.outputDefinitions?.find(field => field.id === mainOutputId)?.name : device.mainOutput;
   const busy = refreshing || (tab === 'details' ? model.details.busy : tab === 'history' ? model.history.busy : model.logs.busy);
   const refresh = () => { model.refresh(); onRefresh?.(); };
   async function openMap() {
@@ -87,50 +88,53 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
       {tab === 'details' ? <>
         <View style={styles.identity}><DeviceThumbnail device={info?.imageUri ? { ...device, image: { uri: info.imageUri } } : device} size={72} />
           <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{device.name}</Text>
-            <Text selectable style={styles.caption}>{device.devEui ? 'DevEUI: ' + device.devEui : 'Hardware ID: ' + device.hardwareId}</Text>
             <Text style={styles.caption}>Last heard: {device.lastHeardDetail}</Text></View></View>
         {device.deleted && <Text style={styles.archived}>Archived device</Text>}
         {!device.deleted && <Pressable accessibilityRole="button" onPress={() => setDownlinkOpen(true)} style={[styles.range, styles.selectedRange, { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }]}><MaterialCommunityIcons name="download-network-outline" size={20} color="#6D941B" /><Text style={styles.linkText}>Send Downlink</Text></Pressable>}
-        {!!device.description && <Text style={styles.description}>{device.description}</Text>}
         {!!model.details.error && <Text accessibilityRole="alert" style={styles.error}>{model.details.error}</Text>}
         {!!info?.warnings.length && <View style={styles.warning}><Text style={styles.label}>Some device information could not be loaded.</Text>
           {info.warnings.map(warning => <Text key={warning} style={styles.caption}>{warning}</Text>)}</View>}
-        <ResponsiveGrid minimumWidth={440} maximumColumns={2}>
-          <View style={liveStyles.card}>
-            <Text accessibilityRole="header" style={styles.cardTitle}>Device information</Text>
-            <ResponsiveGrid minimumWidth={180} maximumColumns={2}>
-              <Metadata label="Hardware" value={info?.hardwareName} /><Metadata label="Manufacturer" value={info?.manufacturer} />
-              <Metadata label="Model" value={info?.model} /><Metadata label="Connectivity" value={connectivityLabel(info?.connectivity || device.hardwareType)} />
-              <Metadata label="Main output" value={mainOutput} /><Metadata label="Network" value={info?.networkName} />
-              <Metadata label="Network provider" value={info?.networkProvider} /><Metadata label="Network interface" value={info?.networkInterface || device.networkInterface} />
-              <Metadata label="Tag" value={info?.tag} /><Metadata label="Project" value={device.projectName} />
-              <Metadata label="Cluster" value={device.clusterName} /><Metadata label="Location" value={device.location} />
-              <Metadata label="GPS support" value={info?.gpsSupported === undefined ? undefined : info.gpsSupported ? 'Yes' : 'No'} />
-              <Metadata label="Status" value={device.deleted ? 'Archived' : 'Current'} />
-            </ResponsiveGrid>
-            {!!info?.hardwareDescription && <DetailRow label="Hardware description" value={info.hardwareDescription} />}
-          </View>
-          <View style={liveStyles.card}><Text accessibilityRole="header" style={styles.cardTitle}>Device location</Text>
-            {device.coordinates ? <>
-              <DetailRow label="Place" value={device.coordinates.placeName} /><DetailRow label="Coordinates" value={device.coordinates.lat + ', ' + device.coordinates.lng} />
-              <View style={styles.map}><LiveMap devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
-              <Pressable accessibilityRole="link" onPress={openMap} style={styles.mapLink}><MaterialCommunityIcons name="open-in-new" size={18} color="#6D941B" /><Text style={styles.linkText}>Open map</Text></Pressable>
-              {!!mapError && <Text accessibilityRole="alert" style={styles.error}>{mapError}</Text>}
-            </> : <Text style={styles.description}>Coordinates have not been reported for this device.</Text>}
-          </View>
-        </ResponsiveGrid>
         <DeviceDataPanel device={device} mainOutputId={mainOutputId} definitions={info?.outputDefinitions} loading={model.details.busy} />
-        {!!info?.latestPacket && <><Text accessibilityRole="header" style={styles.section}>Latest packet</Text><PacketCard packet={info.latestPacket} device={device} latest /></>}
-        {!!info?.latestLog && <View style={{ marginTop: 18 }}><Text style={styles.cardTitle}>Latest activity</Text><LogsList logs={[info.latestLog]} /></View>}
-        <Text accessibilityRole="header" style={styles.section}>Identifiers</Text>
-        <View style={liveStyles.card}><ResponsiveGrid minimumWidth={240} maximumColumns={2}>
-          <Metadata label="Device ID" value={device.id} /><Metadata label="DevEUI" value={device.devEui} />
-          <Metadata label="Hardware ID" value={device.hardwareId} /><Metadata label="Network ID" value={device.networkId} />
-          <Metadata label="Organization ID" value={device.organizationId} /><Metadata label="Project ID" value={device.projectId} />
-          <Metadata label="Cluster ID" value={device.clusterId} /><Metadata label="Main output ID" value={mainOutputId} />
-          <Metadata label="Manufacturer ID" value={info?.manufacturerId} /><Metadata label="Tag ID" value={info?.tagId} />
-          <Metadata label="Recorded timestamp" value={device.timestamp} />
-        </ResponsiveGrid></View>
+        <View style={[liveStyles.card, styles.information]}>
+          <View style={styles.summaryHeader}>
+            <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.label}>Hardware</Text><Text style={styles.metadataValue}>{info?.hardwareName || device.hardwareType || 'Not reported'}</Text></View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Show more device details" accessibilityState={{ expanded: moreDetails }} onPress={() => setMoreDetails(value => !value)} style={styles.detailsToggle}>
+              <Text style={styles.linkText}>{moreDetails ? 'Less details' : 'More details'}</Text><MaterialCommunityIcons name={moreDetails ? 'chevron-up' : 'chevron-down'} size={20} color="#6D941B" />
+            </Pressable>
+          </View>
+          {moreDetails && <View style={styles.expandedDetails}>
+            {!!device.description && <Text style={styles.description}>{device.description}</Text>}
+            <ResponsiveGrid minimumWidth={130} maximumColumns={4} gap={12}>
+              {!!info?.manufacturer && <Metadata label="Manufacturer" value={info.manufacturer} />}
+              {!!info?.model && <Metadata label="Model" value={info.model} />}
+              <Metadata label="Connectivity" value={connectivityLabel(info?.connectivity || device.hardwareType)} />
+              {!!info?.networkName && <Metadata label="Network" value={info.networkName} />}
+              {!!info?.networkProvider && <Metadata label="Network provider" value={info.networkProvider} />}
+              {!!(info?.networkInterface || device.networkInterface) && <Metadata label="Network interface" value={info?.networkInterface || device.networkInterface} />}
+              {!!info?.tag && <Metadata label="Tag" value={info.tag} />}
+              <Metadata label="Project" value={device.projectName} />
+              {!!device.clusterName && <Metadata label="Cluster" value={device.clusterName} />}
+            </ResponsiveGrid>
+            {!!info?.hardwareDescription && <Metadata label="Hardware description" value={info.hardwareDescription} />}
+            <ResponsiveGrid minimumWidth={240} maximumColumns={3}>
+              <Metadata label="Device ID" value={device.id} />
+              {!!device.devEui && <Metadata label="DevEUI" value={device.devEui} />}
+              <Metadata label="Hardware ID" value={device.hardwareId} />
+              {!!device.networkId && <Metadata label="Network ID" value={device.networkId} />}
+            </ResponsiveGrid>
+            {!!(device.location || device.coordinates?.placeName) && <Metadata label="Location" value={device.location || device.coordinates?.placeName} />}
+            {!!device.coordinates && <View>
+              <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMap }} onPress={() => setShowMap(value => !value)} style={styles.toggle}>
+                <Text style={styles.linkText}>{showMap ? 'Hide map' : 'Show map'}</Text><MaterialCommunityIcons name={showMap ? 'chevron-up' : 'map-outline'} size={20} color="#6D941B" />
+              </Pressable>
+              {showMap && <>
+                <View style={styles.map}><LiveMap devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
+                <Pressable accessibilityRole="link" onPress={openMap} style={styles.mapLink}><MaterialCommunityIcons name="open-in-new" size={18} color="#6D941B" /><Text style={styles.linkText}>Open map</Text></Pressable>
+                {!!mapError && <Text accessibilityRole="alert" style={styles.error}>{mapError}</Text>}
+              </>}
+            </View>}
+          </View>}
+        </View>
       </> : tab === 'history' ? <>
         <Text accessibilityRole="header" style={styles.sectionTitle}>Packet history</Text><Text style={styles.description}>{device.name}</Text>
         <View style={styles.ranges}>{(['packets', 'trends'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: historyView === value }} onPress={() => setHistoryView(value)} style={[styles.range, historyView === value && styles.selectedRange]}><Text style={styles.rangeText}>{value === 'packets' ? 'Packets' : 'Charts'}</Text></Pressable>)}</View>
@@ -155,6 +159,12 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   </View></SafeAreaView>;
 }
 const styles = StyleSheet.create({
+  information: { marginTop: 16 },
+  summaryHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
+  detailsToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  expandedDetails: { marginTop: 16, gap: 16, borderTopWidth: 1, borderTopColor: '#EEF0EB', paddingTop: 16 },
+  metadata: { gap: 3, paddingVertical: 4 },
+  metadataValue: { fontSize: 14, lineHeight: 21, color: '#303030' },
   header: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingHorizontal: 8 },
   heading: { flex: 1, minWidth: 0, textAlign: 'center', color: '#303030', fontSize: 18, fontWeight: '600' }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', marginHorizontal: 16, padding: 4, gap: 4, borderRadius: 10, backgroundColor: '#EAEDE5', marginBottom: 8 },
