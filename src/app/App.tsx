@@ -1,39 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import type { AuthUser } from '../features/auth/types';
 import { signOut } from '../features/auth/services/auth';
+import { onSessionExpired, restoreSession } from '../services/session';
 import { MainNavigator } from './MainNavigator';
 
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [preview, setPreview] = useState(false);
+  const [restoring, setRestoring] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
-  async function exitDevices() {
+  const signingOut = useRef(false);
+  useEffect(() => {
+    let active = true;
+    restoreSession().then(session => { if (active) setUser(session); })
+      .catch(() => { if (active) setError('Unable to restore your session. Please sign in again.'); })
+      .finally(() => { if (active) setRestoring(false); });
+    const unsubscribe = onSessionExpired(() => { if (active) { setUser(null); setPreview(false); setError('Your session has expired. Please sign in again.'); } });
+    return () => { active = false; unsubscribe(); };
+  }, []);
+  async function exitSession() {
     if (preview) { setPreview(false); return; }
-    if (busy) return;
-    setBusy(true);
-    setError('');
+    if (signingOut.current) return;
+    signingOut.current = true; setBusy(true); setError('');
     try { await signOut(); setUser(null); }
     catch { setError('Unable to sign out. Please try again.'); }
-    finally { setBusy(false); }
+    finally { signingOut.current = false; setBusy(false); }
   }
-
   return <SafeAreaProvider>
     <StatusBar barStyle="dark-content" />
-    {user || preview ? <MainNavigator onExit={exitDevices} preview={preview} /> : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
+    {restoring ? <View style={styles.starting}><ActivityIndicator color="#83AF23" accessibilityLabel="Restoring your session" /><Text style={styles.startingText}>Opening Ginjer…</Text></View>
+      : user || preview ? <MainNavigator user={user} onExit={exitSession} preview={preview} />
+        : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
     <Modal visible={busy || !!error} transparent animationType="fade" onRequestClose={() => { if (!busy) setError(''); }}>
       <View style={styles.overlay}><View style={styles.feedback}>
-        {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out...</Text></> : <><Text accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" onPress={() => setError('')} style={styles.close}><Text>Close</Text></Pressable></>}
+        {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out…</Text></>
+          : <><Text accessibilityRole="alert" style={styles.message}>{error}</Text><Pressable accessibilityRole="button" onPress={() => setError('')} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable></>}
       </View></View>
     </Modal>
   </SafeAreaProvider>;
 }
 const styles = StyleSheet.create({
+  starting: { flex: 1, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', gap: 16 }, startingText: { color: '#858585', fontSize: 14 },
   overlay: { flex: 1, backgroundColor: '#00000055', justifyContent: 'center', alignItems: 'center', padding: 24 },
   feedback: { width: '100%', maxWidth: 360, padding: 24, borderRadius: 16, backgroundColor: 'white', gap: 16 },
-  close: { alignSelf: 'flex-end', padding: 12 },
+  message: { color: '#303030', fontSize: 15, lineHeight: 23 }, close: { alignSelf: 'flex-end', minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
+  closeText: { color: '#6D941B', fontWeight: '600' },
 });

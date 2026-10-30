@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import type { AuthUser } from '../features/auth/types';
+import { ConnectedNavigator } from './ConnectedNavigator';
 import { AnalyticsScreen } from '../features/analytics/screens/AnalyticsScreen';
 import { demoAnalyticsRepository } from '../features/analytics/services/analytics';
 import { DeviceNavigator } from '../features/devices/DeviceNavigator';
@@ -7,7 +9,7 @@ import { demoLocationsRepository } from '../features/locations/services/location
 import { ProfileNavigator } from '../features/profile/ProfileNavigator';
 import { createDemoProfileRepository } from '../features/profile/services/profile';
 
-export function MainNavigator({ onExit, preview }: { onExit: () => void; preview: boolean }) {
+function DemoNavigator({ onExit, preview }: { onExit: () => void; preview: boolean }) {
   const [tab, setTab] = useState<'devices' | 'locations' | 'analytics' | 'profile'>('devices');
   const [dashboardId, setDashboardId] = useState('public');
   const [profileRepository] = useState(createDemoProfileRepository);
@@ -20,4 +22,9 @@ export function MainNavigator({ onExit, preview }: { onExit: () => void; preview
     onDashboardChange={setDashboardId} onDevices={onDevices} onLocations={onLocations} onProfile={onProfile} />;
   if (tab === 'profile') return <ProfileNavigator repository={profileRepository} onDevices={onDevices} onLocations={onLocations} onAnalytics={onAnalytics} onLogout={onExit} />;
   return <DeviceNavigator onExit={onExit} preview={preview} onLocations={onLocations} onProfile={onProfile} onAnalytics={onAnalytics} />;
+}
+
+export function MainNavigator({ user, preview, onExit }: { user: AuthUser | null; preview: boolean; onExit: () => void }) {
+  if (preview) return <DemoNavigator preview onExit={onExit} />;
+  return user ? <ConnectedNavigator key={user._id} user={user} onExit={onExit} /> : null;
 }

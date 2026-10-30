@@ -1,29 +1,28 @@
 # Ginjer application scope
 
-This repository is the main React Native application. The supplied conversation establishes sign-in as the first screen, with browser preview support. Future screens will be implemented from their supplied designs.
+## Implemented
 
-## Current milestone
+- Reference sign-in and four-tab preview, with isolated fixtures.
+- Live authenticated organizations, projects, device details, and module listing from the supplied Postman operations.
+- Shared organization/project scope, refreshed tokens, cancellation, session expiry, and native session restoration.
+- Searchable current/archived devices, complete outputs/attributes/metadata, refresh controls, and error/empty states.
+- Analytics from actual current readings and attributes, plus a searchable module catalog.
+- Real-coordinate maps with pan/zoom, fit, overlapping-device selection, and missing-coordinate lists.
+- Read-only live profile identity and membership details.
 
-- Ginjer sign-in reference, logo, illustration, responsive layout and keyboard handling.
-- Email validation, password visibility, loading and error states.
-- Postman GraphQL sign-in and native secure token storage.
-- Browser preview with an in-memory session.
-- Device list and details UI based on the supplied references, using typed sample data.
-- Local search, sample filters, output selection and map card open/close states.
-- Preview entry from sign-in, device navigation and sign out.
-- Original device/map artwork extracted from the supplied Figma archive.
-- Profile and edit-profile screens with inline validation, session-only saves, avatar choices, and searchable organization/project selection.
-- Analytics dashboards with a native fill-level gauge, occupancy/valve status cards, metric details, and session-only dashboard selection.
-- Locations map preview using original India artwork, searchable/filterable markers, device info cards, and device-details navigation.
+## Needs additional backend support
 
-## Next milestones
+1. Profile updates and phone/avatar fields.
+2. Configured dashboard/module bindings and historical readings.
+3. Notification feeds and alert history.
+4. Downlink interface discovery, payload schemas, and command permission/confirmation requirements.
+5. Any additional non-LoRaWAN device endpoints beyond the provided project counts.
 
-1. Connect profile loading/saving and organisation selection to backend accounts APIs.
-2. Project overview using projectOverview.
-3. Connect the device list to project/cluster APIs.
-4. Connect device details/outputs/attributes to APIs and replace the static map preview with live location.
-5. Connect analytics dashboards and metric readings to backend APIs.
-6. Connect Locations to real coordinates and a live map renderer.
-7. Modules and device commands after the company supplies downlink payload specifications.
+## Release verification
 
-The sanitized api-operations.json contains only query definitions from the supplied collection. It excludes tokens, credentials and account-specific values. There are no documented alerts/history endpoints. Do not send example downlinks to production.
+- Complete browser and physical-device visual/interaction QA.
+- Verify password-based sign-in with working credentials, native cold-start restoration, and expired-session recovery on devices.
+- Exercise slow/offline requests, long readings, large projects, and organization switching.
+- Select/configure the deployment map tile service.
+
+The sanitized operations document contains query definitions only. Collection tokens and account-specific values remain outside source control. No downlinks have been sent.

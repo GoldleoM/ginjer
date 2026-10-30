@@ -1,15 +1,14 @@
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +31,7 @@ export function SignInScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
+  const passwordRef = useRef<TextInput>(null);
   async function submit() {
     if (submitting.current) return;
     const validation = validateCredentials(email, password);
@@ -49,16 +49,6 @@ export function SignInScreen({
     } finally {
       submitting.current = false;
       setBusy(false);
-    }
-  }
-  async function openLegal(path: string) {
-    try {
-      await Linking.openURL("https://www.touio.com/" + path);
-    } catch {
-      Alert.alert(
-        "Unable to open link",
-        "Please visit touio.com in your browser.",
-      );
     }
   }
   return (
@@ -102,8 +92,10 @@ export function SignInScreen({
               placeholder='Enter your email'
               editable={!busy}
               returnKeyType='next'
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <OutlinedInput
+              inputRef={passwordRef}
               label='Password*'
               value={password}
               onChangeText={setPassword}
@@ -164,27 +156,10 @@ export function SignInScreen({
               disabled={busy}
               style={styles.previewButton}
             >
-              <Text style={styles.previewText}>Preview device screens</Text>
+              <Text style={styles.previewText}>Preview sample screens</Text>
             </Pressable>
           </View>
-          <Text style={styles.legal}>
-            By continuing, I accept the{" "}
-            <Text
-              accessibilityRole='link'
-              onPress={() => openLegal("terms.html")}
-              style={styles.link}
-            >
-              Terms and Conditions
-            </Text>{" "}
-            and{" "}
-            <Text
-              accessibilityRole='link'
-              onPress={() => openLegal("privacy.html")}
-              style={styles.link}
-            >
-              Privacy Policy.
-            </Text>
-          </Text>
+          <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

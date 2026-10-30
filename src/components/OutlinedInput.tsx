@@ -13,6 +13,7 @@ type Props = TextInputProps & {
   label: string;
   trailing?: React.ReactNode;
   invalid?: boolean;
+  inputRef?: React.Ref<TextInput>;
 };
 
 export function OutlinedInput({
@@ -22,6 +23,7 @@ export function OutlinedInput({
   style,
   onFocus,
   onBlur,
+  inputRef,
   ...props
 }: Props) {
   const [focused, setFocused] = React.useState(false);
@@ -37,6 +39,7 @@ export function OutlinedInput({
       <Text style={styles.label}>{label}</Text>
       <TextInput
         {...props}
+        ref={inputRef}
         accessibilityLabel={label}
         onFocus={(event) => {
           setFocused(true);

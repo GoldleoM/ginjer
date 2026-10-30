@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, IconButton, PreviewDialog, ReadingIcon } from '../components/DeviceUI';
 import type { Device } from '../types';
+import { ConnectedDeviceDetails } from '../../workspace/screens/ConnectedDeviceDetails';
 
-export function DeviceDetailsScreen({ device, onBack }: { device: Device; onBack: () => void }) {
+function DemoDeviceDetailsScreen({ device, onBack }: { device: Device; onBack: () => void }) {
   const [selected, setSelected] = useState(device.readings[0].id);
   const [locationOpen, setLocationOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,3 +49,7 @@ const styles = StyleSheet.create({
   locationCard: { backgroundColor: 'white', width: '91%', flexDirection: 'row', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 5 }, elevation: 5, alignItems: 'center', gap: 10 }, locationImage: { width: '29%', aspectRatio: 1.2, borderRadius: 5 }, locationInfo: { flex: 1, gap: 4 }, locationName: { color: colors.text, fontSize: 16, fontWeight: '600' }, address: { fontSize: 11, color: colors.muted, fontWeight: '500' }, coordinates: { fontSize: 10, fontWeight: '600', color: colors.text, marginTop: 16 }, locationActions: { alignSelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', margin: -7 }, directionIcon: { width: 34, height: 34, borderRadius: 20, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   caption: { fontSize: 11, lineHeight: 17, color: colors.muted, marginTop: 12 }, dialogText: { color: colors.muted, fontSize: 15, lineHeight: 23 },
 });
+
+export function DeviceDetailsScreen(props: { device: Device; onBack: () => void; onRefresh?: () => void; refreshing?: boolean; error?: string }) {
+  return props.device.source === 'live' ? <ConnectedDeviceDetails {...props} /> : <DemoDeviceDetailsScreen {...props} />;
+}

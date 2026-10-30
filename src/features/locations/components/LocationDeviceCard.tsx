@@ -1,8 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ReadingIcon } from '../../devices/components/DeviceUI';
 import type { Device } from '../../devices/types';
+import { DeviceThumbnail } from '../../workspace/components/WorkspaceUI';
 
 export function LocationDeviceCard({ device, top, onDetails, onLayout }: {
   device: Device; top: number; onDetails: () => void; onLayout: (height: number) => void;
@@ -10,7 +11,7 @@ export function LocationDeviceCard({ device, top, onDetails, onLayout }: {
   return <View accessibilityLabel={'Information for ' + device.name} style={[styles.card, { top }]}
     onLayout={event => onLayout(event.nativeEvent.layout.height)}>
     <View style={styles.header}>
-      <View style={styles.thumbnail}><Image source={device.image} style={styles.image} resizeMode="contain" accessible={false} /></View>
+      <DeviceThumbnail device={device} size={42} />
       <View style={styles.identity}><Text style={styles.name}>{device.name}</Text><Text selectable style={styles.deviceId}>{device.hardwareId}</Text></View>
       <View style={styles.activity}><Text style={styles.activityLabel}>Last Activity</Text><Text style={styles.activityValue}>{device.lastHeard}</Text></View>
     </View>
