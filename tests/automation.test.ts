@@ -120,6 +120,26 @@ test('missing schedule and command settings remain unknown instead of invented d
   assert.equal(rule.actions[0].port, undefined); assert.equal(rule.actions[0].delay, undefined); assert.equal(rule.actions[0].feedback, undefined);
 });
 
+test('rule list retains all trigger types and disabled rules beyond thirty entries', async () => {
+  const rows = Array.from({ length: 38 }, (_, index) => ({ ...raw, _id: `rule-${index}`, active: index % 2 === 0,
+    triggerTypes: [index % 3 === 0 ? 'MANUAL' : index % 3 === 1 ? 'TIME_BASED_SCHEDULE' : 'NEW_MEASUREMENT'], advanceConditions: [],
+  }));
+  const api = createOperationsApi((async () => ({ alerts: [...rows, { ...raw, projectId: 'other' }, { ...raw, deleted: true }] })) as ApiRequest);
+  const result = await api.rules(scope);
+  assert.equal(result.length, 38); assert.equal(result.at(-1)?.id, 'rule-37');
+  assert.equal(result.filter(rule => !rule.active).length, 19);
+});
+
+test('rule refresh replaces removed and changed rules and rejects missing lists', async () => {
+  let alerts: unknown = [raw];
+  const api = createOperationsApi((async () => ({ alerts })) as ApiRequest);
+  assert.equal((await api.rules(scope))[0].name, 'Pump On');
+  alerts = [{ ...raw, name: 'Renamed', active: false }];
+  const next = await api.rules(scope); assert.equal(next[0].name, 'Renamed'); assert.equal(next[0].active, false);
+  alerts = []; assert.deepEqual(await api.rules(scope), []);
+  for (const invalid of [null, undefined, {}]) { alerts = invalid; await assert.rejects(api.rules(scope), /valid automation list/); }
+});
+
 test('manual automation sends only its ID and never replays configured downlinks', async () => {
   const commands = [{ deviceId: 'device', downlinkInterfaceId: 'controller', value: { relay: false }, port: 17, deviceClass: 'CLASS_A', scheduleInMin: 3 }];
   const [configured] = normalizeRules([{ ...raw, advanceConditions: commands }], scope);

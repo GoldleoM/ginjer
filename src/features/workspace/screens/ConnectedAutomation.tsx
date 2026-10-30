@@ -19,7 +19,17 @@ function useRunningRefresh(running: boolean, refresh: () => void) {
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(() => { if (foreground()) latest.current(); }, 22000);
-    return () => clearInterval(timer);
+    const resume = () => { if (foreground()) latest.current(); };
+    const sub = AppState.addEventListener('change', resume);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('focus', resume); document.addEventListener('visibilitychange', resume);
+    }
+    return () => {
+      clearInterval(timer); sub.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume);
+      }
+    };
   }, [running]);
 }
 function Badge({ state, label }: { state: string; label?: string }) {
@@ -43,8 +53,9 @@ function RuleCard({ rule, scope, api, onRuns, onMenu, onChanged }: { rule: Autom
   const [accepted, setAccepted] = useState(false);
   const [enabled, setEnabled] = useState(rule.active);
   const lock = useRef(false); const mounted = useRef(true);
+  const runsBeforeRequest = useRef<Set<string> | null>(null);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  useEffect(() => setEnabled(rule.active), [rule.active]);
+  useEffect(() => setEnabled(rule.active), [rule]);
   const running = !!history?.runs.some(run => run.state === 'RUNNING');
   const refresh = () => setRevision(value => value + 1);
   useRunningRefresh(running || accepted, refresh);
@@ -52,7 +63,12 @@ function RuleCard({ rule, scope, api, onRuns, onMenu, onChanged }: { rule: Autom
     const controller = new AbortController(); setLoading(true); setError('');
     Promise.allSettled([api.history(scope, rule.id, 1, controller.signal), api.schedules(scope, rule.id, controller.signal)]).then(([runs, schedules]) => {
       if (controller.signal.aborted) return;
-      if (runs.status === 'fulfilled') { setHistory(runs.value); if (runs.value.runs.some(run => run.state === 'RUNNING')) setAccepted(false); }
+      if (runs.status === 'fulfilled') {
+        setHistory(runs.value);
+        if (runs.value.runs.some(run => run.state === 'RUNNING' || (runsBeforeRequest.current && !runsBeforeRequest.current.has(run.id)))) {
+          runsBeforeRequest.current = null; setAccepted(false); setNotice('');
+        }
+      }
       else setError('Run status unavailable. Refresh before sending a command.');
       setScheduleCount(configuredScheduleCount(rule, schedules.status === 'fulfilled' ? schedules.value.length : undefined));
       setLoading(false);
@@ -63,7 +79,11 @@ function RuleCard({ rule, scope, api, onRuns, onMenu, onChanged }: { rule: Autom
     if (lock.current) return;
     lock.current = true; setBusy(true); setError(''); setNotice('');
     try {
-      if (kind === 'run') { await api.run(scope, rule); if (mounted.current) { setAccepted(true); setNotice('Run requested. Open runs to check execution.'); } }
+      if (kind === 'run') {
+        const previousRuns = new Set(history?.runs.map(run => run.id) || []);
+        await api.run(scope, rule);
+        if (mounted.current) { runsBeforeRequest.current = previousRuns; setAccepted(true); setNotice('Run requested. Open runs to check execution.'); }
+      }
       else { const state = await api.toggle(scope, rule, !!value); if (mounted.current) setEnabled(state); }
       if (mounted.current) { refresh(); onChanged(); }
     } catch (e) { if (mounted.current) setError((e instanceof Error ? e.message : 'Unable to confirm this request.') + ' No automatic retry was sent.'); }
@@ -94,34 +114,42 @@ export function ConnectedAutomation({ operations, devices, onDevice, api = liveA
   const [picker, setPicker] = useState<'solution' | 'output' | null>(null);
   const [runId, setRunId] = useState(''); const [menuId, setMenuId] = useState(''); const [details, setDetails] = useState(false);
   const [catalog, setCatalog] = useState<AutomationCatalog>({ solutions: [], labels: {} }); const [catalogError, setCatalogError] = useState('');
-  const [limit, setLimit] = useState(30); const [catalogRevision, setCatalogRevision] = useState(0);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   const { rules, scope } = operations;
+  useEffect(() => { operations.refresh(); }, [operations.refresh]);
   useEffect(() => { if (!runId) return; const sub = BackHandler.addEventListener('hardwareBackPress', () => { setRunId(''); return true; }); return () => sub.remove(); }, [runId]);
   useEffect(() => {
     const controller = new AbortController(); setCatalogError('');
     api.catalog(scope, controller.signal).then(value => { if (!controller.signal.aborted) setCatalog(value); }).catch(() => { if (!controller.signal.aborted) setCatalogError('Filter names could not be loaded.'); });
     return () => controller.abort();
-  }, [api, scope, catalogRevision]);
-  const automations = rules.data.filter(rule => rule.actions.length > 0 || rule.triggers.includes('MANUAL'));
+  }, [api, scope, catalogRevision, rules.data]);
+  const automations = rules.data;
+  useEffect(() => {
+    if (rules.busy || rules.error) return;
+    if (solution && !rules.data.some(rule => rule.solutionId === solution)) setSolution('');
+    if (output && !rules.data.some(rule => rule.conditions.some(condition => condition.outputId === output))) setOutput('');
+  }, [rules.data, rules.busy, rules.error, solution, output]);
   const label = (id: string) => catalog.labels[id] || devices.flatMap(d => d.readings).find(r => r.id === id)?.title || id;
   const solutions = [...new Set(automations.map(rule => rule.solutionId).filter(Boolean))].map(id => ({ id, name: catalog.solutions.find(item => item.id === id)?.name || id }));
   const outputs = [...new Set(automations.flatMap(rule => rule.conditions.map(condition => condition.outputId)).filter(Boolean))].map(id => ({ id, name: label(id) }));
   const filtered = automations.filter(rule => (!solution || rule.solutionId === solution) && (!output || rule.conditions.some(condition => condition.outputId === output)) && rule.name.toLowerCase().includes(query.trim().toLowerCase()));
   const menu = automations.find(rule => rule.id === menuId); const selected = automations.find(rule => rule.id === runId);
   if (selected) return <AutomationRuns key={selected.id} rule={selected} scope={scope} api={api} devices={devices} labels={catalog.labels} onBack={() => setRunId('')} onDevice={onDevice} />;
-  return <View style={{ flex: 1 }}><FlatList data={filtered.slice(0, limit)} keyExtractor={rule => rule.id} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
+  return <View style={{ flex: 1 }}><FlatList data={filtered} keyExtractor={rule => rule.id} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
     refreshControl={<RefreshControl refreshing={rules.busy} onRefresh={operations.refresh} tintColor={theme.colors.primary} />}
     ListHeaderComponent={<View style={styles.stack}>
       <View style={styles.filters}><Filter label="Solution" value={solutions.find(s => s.id === solution)?.name || 'All'} onPress={() => setPicker('solution')} /><Filter label="Output" value={outputs.find(o => o.id === output)?.name || 'All'} onPress={() => setPicker('output')} /></View>
-      <View style={styles.sectionBar}><Text accessibilityRole="header" style={styles.title}>Automation</Text><ActionIcon icon="magnify" label="Search automations" onPress={() => setSearchOpen(value => !value)} /><ActionIcon icon="refresh" label="Refresh automations" onPress={() => { operations.refresh(); setCatalogRevision(v => v + 1); }} /></View>
-      {searchOpen && <TextInput accessibilityLabel="Search automation rules" placeholder="Search automations" value={query} onChangeText={value => { setQuery(value); setLimit(30); }} style={styles.search} autoCorrect={false} />}
+      <View style={styles.sectionBar}><Text accessibilityRole="header" style={styles.title}>Automation</Text><ActionIcon icon="magnify" label="Search automations" onPress={() => { setSearchOpen(value => !value); if (searchOpen) setQuery(''); }} /><ActionIcon icon="refresh" label="Refresh automations" onPress={() => { operations.refresh(); setCatalogRevision(v => v + 1); }} /></View>
+      {searchOpen && <TextInput accessibilityLabel="Search automation rules" placeholder="Search automations" value={query} onChangeText={setQuery} style={styles.search} autoCorrect={false} />}
+      <View style={styles.listSummary}><Text style={styles.caption}>{solution || output || query ? `${filtered.length} of ${automations.length} automations` : `${automations.length} automations`}</Text>
+        {!!(solution || output || query) && <Pressable accessibilityRole="button" onPress={() => { setSolution(''); setOutput(''); setQuery(''); }} style={styles.textButton}><Text style={styles.link}>Clear filters</Text></Pressable>}
+      </View>
       {!!catalogError && <Text style={styles.error}>{catalogError}</Text>}
       {!!rules.error && <Feedback title="Unable to refresh automations" message={rules.error} onRetry={operations.refresh} />}
     </View>}
     renderItem={({ item }) => <RuleCard rule={item} scope={scope} api={api} onRuns={() => setRunId(item.id)} onMenu={() => { setMenuId(item.id); setDetails(false); }} onChanged={operations.refresh} />}
-    ListEmptyComponent={rules.busy && !rules.data.length ? <Feedback busy /> : !rules.error ? <Feedback title="No automations found" message={solution || output || query ? 'Try another filter or search.' : 'This project has no configured automation commands.'} /> : null}
-    ListFooterComponent={limit < filtered.length ? <Pressable accessibilityRole="button" onPress={() => setLimit(n => n + 30)} style={styles.textButton}><Text style={styles.link}>Load more automations</Text></Pressable> : null} />
-    {picker && <WorkspacePicker title={picker === 'solution' ? 'Solution' : 'Output'} selectedId={picker === 'solution' ? solution : output} items={[{ id: '', name: 'All' }, ...(picker === 'solution' ? solutions : outputs)]} onClose={() => setPicker(null)} onSelect={id => { picker === 'solution' ? setSolution(id) : setOutput(id); setLimit(30); setPicker(null); }} />}
+    ListEmptyComponent={rules.busy && !rules.data.length ? <Feedback busy /> : !rules.error ? <Feedback title="No automations found" message={solution || output || query ? 'Try another filter or search.' : 'No automation rules were returned for this project.'} /> : null} />
+    {picker && <WorkspacePicker title={picker === 'solution' ? 'Solution' : 'Output'} selectedId={picker === 'solution' ? solution : output} items={[{ id: '', name: 'All' }, ...(picker === 'solution' ? solutions : outputs)]} onClose={() => setPicker(null)} onSelect={id => { picker === 'solution' ? setSolution(id) : setOutput(id); setPicker(null); }} />}
     <InfoDialog visible={!!menu} title={menu?.name || 'Automation'} onClose={() => setMenuId('')}>
       {!!menu && <View style={styles.stack}><Pressable accessibilityRole="button" onPress={() => { setRunId(menu.id); setMenuId(''); }} style={styles.menuRow}><MaterialCommunityIcons name="history" size={21} color={theme.colors.primary} /><Text style={styles.link}>Automation runs</Text><MaterialCommunityIcons name="chevron-right" size={20} color="#858585" /></Pressable>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: details }} onPress={() => setDetails(value => !value)} style={styles.menuRow}><MaterialCommunityIcons name="information-outline" size={21} color={theme.colors.primary} /><Text style={styles.link}>Rule details</Text><MaterialCommunityIcons name={details ? 'chevron-up' : 'chevron-down'} size={20} color="#858585" /></Pressable>
@@ -168,7 +196,7 @@ function AutomationRuns({ rule, scope, api, devices, labels, onBack, onDevice }:
   const [busy, setBusy] = useState(true); const [error, setError] = useState(''); const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [attempts, setAttempts] = useState<RunAttempt[]>([]); const [attemptPage, setAttemptPage] = useState(1); const [attemptPages, setAttemptPages] = useState(1); const [attemptError, setAttemptError] = useState(''); const [attemptBusy, setAttemptBusy] = useState(false);
   const refresh = () => { setAttemptPage(1); setRevision(value => value + 1); };
-  useRunningRefresh(!!history?.runs.some(run => run.state === 'RUNNING'), refresh);
+  useRunningRefresh(true, refresh);
   useEffect(() => {
     const c = new AbortController(); setBusy(true); setError('');
     api.history(scope, rule.id, page, c.signal).then(value => { if (!c.signal.aborted) setHistory(value); }).catch(e => { if (!c.signal.aborted) setError(e instanceof Error ? e.message : 'Unable to load runs.'); }).finally(() => { if (!c.signal.aborted) setBusy(false); });
@@ -223,6 +251,7 @@ function AttemptRows({ attempts }: { attempts: RunAttempt[] }) {
   </View>;
 }
 const styles = StyleSheet.create({
+  listSummary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   configStep: { borderTopWidth: 1, borderTopColor: '#EEEEEE', paddingTop: 12, gap: 6 }, feedbackConfig: { padding: 10, borderRadius: 8, backgroundColor: '#F4F7ED' }, disabledNotice: { padding: 10, borderRadius: 8, backgroundColor: '#FFF3EF' },
   content: { padding: 12, paddingBottom: 24, gap: 8 }, stack: { gap: 10 }, filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingTop: 8, marginBottom: 4 },
   filter: { flex: 1, minWidth: 120, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#D1D1D1', borderRadius: 10, backgroundColor: 'white', paddingHorizontal: 12 },

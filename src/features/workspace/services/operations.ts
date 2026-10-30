@@ -85,7 +85,12 @@ export const NOTIFICATIONS_QUERY = 'query Notifications($params: TriggeredAlertP
 export const RUNS_QUERY = 'query AutomationHistory($params: AutomationRunsInput!) { automationRuns(automationRunsParams: $params) { alertId organisationId metadata { currentPage totalPages totalRecords } runs { _id organisationId projectId alertId state trigger triggerDeviceId triggeredAt finishedAt currentStep skippedTriggers abortReason cancelReason } } }';
 export function createOperationsApi(request: ApiRequest): OperationsApi {
   return {
-    async rules(scope, signal) { checkScope(scope); const data = await request<{ alerts: unknown }>(RULES_QUERY, { alertParamsInput: scope }, signal); return normalizeRules(data.alerts, scope); },
+    async rules(scope, signal) {
+      checkScope(scope);
+      const data = await request<{ alerts: unknown }>(RULES_QUERY, { alertParamsInput: scope }, signal);
+      if (!Array.isArray(data.alerts)) throw new Error('The server did not return a valid automation list. Please refresh.');
+      return normalizeRules(data.alerts, scope);
+    },
     async notifications(scope, signal) { checkScope(scope); const data = await request<{ triggeredAlerts: unknown }>(NOTIFICATIONS_QUERY, { params: scope }, signal); return normalizeNotifications(data.triggeredAlerts, scope); },
     async runs(scope, ruleId, page, signal) {
       checkScope(scope); if (!ruleId || !Number.isInteger(page) || page < 1) throw new Error('Choose a rule and a valid page.');

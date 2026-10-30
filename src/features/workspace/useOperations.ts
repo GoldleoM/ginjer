@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { authenticatedGraphql } from '../../services/graphql';
 import { createOperationsApi, type AutomationRule, type Notification, type OperationsApi } from './services/operations';
+import { DEVICE_REFRESH_INTERVAL_MS } from './services/devicePolling';
 
 const liveApi = createOperationsApi(authenticatedGraphql);
 type Resource<T> = { scope: string; data: T[]; busy: boolean; error: string };
@@ -12,12 +13,26 @@ export function useOperations(organisationId: string, projectId: string, api: Op
   const [rules, setRules] = useState<Resource<AutomationRule>>(empty);
   const [notifications, setNotifications] = useState<Resource<Notification>>(empty);
   const [revision, setRevision] = useState(0);
-  const [foreground, setForeground] = useState(AppState.currentState !== 'background');
+  const isForeground = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
+    && (Platform.OS !== 'web' || typeof document === 'undefined' || document.visibilityState !== 'hidden');
+  const [foreground, setForeground] = useState(isForeground);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
-  useEffect(() => { const sub = AppState.addEventListener('change', state => setForeground(state === 'active')); return () => sub.remove(); }, []);
+  useEffect(() => {
+    const resume = () => { const active = isForeground(); setForeground(active); if (active) refresh(); };
+    const sub = AppState.addEventListener('change', resume);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('focus', resume); document.addEventListener('visibilitychange', resume);
+    }
+    return () => {
+      sub.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume);
+      }
+    };
+  }, [refresh]);
   useEffect(() => {
     if (!organisationId || !projectId || !foreground) return;
-    const timer = setInterval(refresh, 60000);
+    const timer = setInterval(() => { if (isForeground()) refresh(); }, DEVICE_REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [key, foreground, refresh]);
   useEffect(() => {
