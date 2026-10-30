@@ -13,9 +13,9 @@ npm run web
 
 Use `npm start` for Expo Go, `npm run android` for Android, or `npm run ios` on macOS.
 
-Public configuration is documented in `.env.example`. Copy it to `.env` to customize API hosts. Development builds (`npm start`, `npm run web`, Android/iOS development) use `EXPO_PUBLIC_DEV_API_BASE_URL`, defaulting to `https://devapi.ginjer.io`. Production builds/exports use `EXPO_PUBLIC_PROD_API_BASE_URL`, defaulting to `https://prodapi.ginjer.io`. The shared `API_BASE_URL` removes trailing slashes and appends `/graphql` for all API calls.
+All API calls, including sign-in and Create Account, currently use **https://devapi.ginjer.io/graphql** in both development and release builds. The shared `API_BASE_URL` lives in `src/config/env.ts`; API environment overrides and build-based endpoint switching are disabled for now.
 
-Set `EXPO_PUBLIC_API_BASE_URL` to override the base URL in either build type. The existing `EXPO_PUBLIC_API_URL` full-endpoint override remains supported and takes precedence. Restart Expo after changing configuration; production changes require a new build/export. Never put tokens, passwords, or private keys in Expo public environment variables.
+Public map configuration is documented in `.env.example`. Restart Expo after configuration changes; installed release apps require a new build. Never put tokens, passwords, or private keys in Expo public environment variables.
 
 ## Live application
 
