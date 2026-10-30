@@ -67,6 +67,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   const model = useDeviceInspection(device, tab, inspectionApi);
   const info = model.details.data;
   const mainOutputId = info?.mainOutputId || device.mainOutputId;
+  const mainOutput = device.readings.find(reading => reading.id === mainOutputId)?.title || info?.outputDefinitions?.find(field => field.id === mainOutputId)?.name;
   const busy = refreshing || (tab === 'details' ? model.details.busy : tab === 'history' ? model.history.busy : model.logs.busy);
   const refresh = () => { model.refresh(); onRefresh?.(); };
   async function openMap() {
@@ -96,29 +97,31 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
           {info.warnings.map(warning => <Text key={warning} style={styles.caption}>{warning}</Text>)}</View>}
         <DeviceDataPanel device={device} mainOutputId={mainOutputId} definitions={info?.outputDefinitions} loading={model.details.busy} />
         <View style={[liveStyles.card, styles.information]}>
-          <View style={styles.summaryHeader}>
-            <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.label}>Hardware</Text><Text style={styles.metadataValue}>{info?.hardwareName || device.hardwareType || 'Not reported'}</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Show more device details" accessibilityState={{ expanded: moreDetails }} onPress={() => setMoreDetails(value => !value)} style={styles.detailsToggle}>
-              <Text style={styles.linkText}>{moreDetails ? 'Less details' : 'More details'}</Text><MaterialCommunityIcons name={moreDetails ? 'chevron-up' : 'chevron-down'} size={20} color="#6D941B" />
-            </Pressable>
-          </View>
+          <Text accessibilityRole="header" style={styles.cardTitle}>Device details</Text>
+          <ResponsiveGrid minimumWidth={130} maximumColumns={4} gap={16}>
+            <Metadata label={device.devEui ? 'DevEUI' : 'Device ID'} value={device.devEui || device.id} />
+            {!!device.clusterName && <Metadata label="Cluster" value={device.clusterName} />}
+            <Metadata label="Hardware type" value={info?.hardwareName || device.hardwareType} />
+            {!!info?.manufacturer && <Metadata label="Manufacturer" value={info.manufacturer} />}
+            {!!mainOutput && <Metadata label="Main output" value={mainOutput} />}
+            {!!info?.networkName && <Metadata label="Network" value={info.networkName} />}
+            {!!info?.tag && <Metadata label="Tag" value={info.tag} />}
+            <Metadata label="Connectivity" value={connectivityLabel(info?.connectivity || device.hardwareType)} />
+          </ResponsiveGrid>
+          <Pressable accessibilityRole="button" accessibilityLabel={moreDetails ? 'Show fewer device details' : 'Show more device details'} accessibilityState={{ expanded: moreDetails }} onPress={() => setMoreDetails(value => !value)} style={styles.detailsToggle}>
+            <Text style={styles.linkText}>{moreDetails ? 'Fewer details' : 'More details'}</Text><MaterialCommunityIcons name={moreDetails ? 'chevron-up' : 'chevron-down'} size={20} color="#6D941B" />
+          </Pressable>
           {moreDetails && <View style={styles.expandedDetails}>
             {!!device.description && <Text style={styles.description}>{device.description}</Text>}
             <ResponsiveGrid minimumWidth={130} maximumColumns={4} gap={12}>
-              {!!info?.manufacturer && <Metadata label="Manufacturer" value={info.manufacturer} />}
               {!!info?.model && <Metadata label="Model" value={info.model} />}
-              <Metadata label="Connectivity" value={connectivityLabel(info?.connectivity || device.hardwareType)} />
-              {!!info?.networkName && <Metadata label="Network" value={info.networkName} />}
               {!!info?.networkProvider && <Metadata label="Network provider" value={info.networkProvider} />}
               {!!(info?.networkInterface || device.networkInterface) && <Metadata label="Network interface" value={info?.networkInterface || device.networkInterface} />}
-              {!!info?.tag && <Metadata label="Tag" value={info.tag} />}
               <Metadata label="Project" value={device.projectName} />
-              {!!device.clusterName && <Metadata label="Cluster" value={device.clusterName} />}
             </ResponsiveGrid>
             {!!info?.hardwareDescription && <Metadata label="Hardware description" value={info.hardwareDescription} />}
             <ResponsiveGrid minimumWidth={240} maximumColumns={3}>
-              <Metadata label="Device ID" value={device.id} />
-              {!!device.devEui && <Metadata label="DevEUI" value={device.devEui} />}
+              {!!device.devEui && <Metadata label="Device ID" value={device.id} />}
               <Metadata label="Hardware ID" value={device.hardwareId} />
               {!!device.networkId && <Metadata label="Network ID" value={device.networkId} />}
             </ResponsiveGrid>
@@ -160,11 +163,10 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
 }
 const styles = StyleSheet.create({
   information: { marginTop: 16 },
-  summaryHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
-  detailsToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detailsToggle: { marginTop: 12, alignSelf: 'flex-end', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
   expandedDetails: { marginTop: 16, gap: 16, borderTopWidth: 1, borderTopColor: '#EEF0EB', paddingTop: 16 },
   metadata: { gap: 3, paddingVertical: 4 },
-  metadataValue: { fontSize: 14, lineHeight: 21, color: '#303030' },
+  metadataValue: { fontWeight: '500', fontSize: 14, lineHeight: 21, color: '#303030' },
   header: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingHorizontal: 8 },
   heading: { flex: 1, minWidth: 0, textAlign: 'center', color: '#303030', fontSize: 18, fontWeight: '600' }, icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', marginHorizontal: 16, padding: 4, gap: 4, borderRadius: 10, backgroundColor: '#EAEDE5', marginBottom: 8 },
