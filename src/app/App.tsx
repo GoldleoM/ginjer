@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import type { AuthUser } from '../features/auth/types';
 import { signOut } from '../features/auth/services/auth';
-import { DeviceNavigator } from '../features/devices/DeviceNavigator';
+import { MainNavigator } from './MainNavigator';
 
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -24,7 +24,7 @@ export default function App() {
 
   return <SafeAreaProvider>
     <StatusBar barStyle="dark-content" />
-    {user || preview ? <DeviceNavigator onExit={exitDevices} preview={preview} /> : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
+    {user || preview ? <MainNavigator onExit={exitDevices} preview={preview} /> : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
     <Modal visible={busy || !!error} transparent animationType="fade" onRequestClose={() => { if (!busy) setError(''); }}>
       <View style={styles.overlay}><View style={styles.feedback}>
         {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out...</Text></> : <><Text accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" onPress={() => setError('')} style={styles.close}><Text>Close</Text></Pressable></>}

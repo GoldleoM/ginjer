@@ -4,14 +4,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, IconButton, PreviewDialog, ReadingIcon } from '../components/DeviceUI';
 import { demoDevices } from '../data/demoDevices';
-import type { Device, DeviceIcon } from '../types';
+import type { Device } from '../types';
+import { BottomTabs } from '../../../components/BottomTabs';
 
 type Filter = 'all' | 'recent' | 'attention';
-export function DeviceListScreen({ onSelect, onExit, preview }: { onSelect: (device: Device) => void; onExit: () => void; preview: boolean }) {
+export function DeviceListScreen({ onSelect, onExit, preview, onProfile }: { onSelect: (device: Device) => void; onExit: () => void; preview: boolean; onProfile: () => void }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [dialog, setDialog] = useState<'notifications' | 'profile' | null>(null);
+  const [dialog, setDialog] = useState<'notifications' | null>(null);
   const devices = useMemo(() => demoDevices.filter(device =>
     (device.name.toLowerCase().includes(query.trim().toLowerCase()) || device.hardwareId.toLowerCase().includes(query.trim().toLowerCase())) &&
     (filter === 'all' || (filter === 'recent' ? device.recent : device.needsAttention))
@@ -42,15 +43,10 @@ export function DeviceListScreen({ onSelect, onExit, preview }: { onSelect: (dev
         </Pressable>)}
         {devices.length === 0 && <View style={styles.empty}><MaterialCommunityIcons name="magnify" size={36} color={colors.light} /><Text style={styles.emptyTitle}>No devices found</Text><Text style={styles.emptyText}>Try a different name, ID, or filter.</Text><Pressable accessibilityRole="button" onPress={() => { setQuery(''); setFilter('all'); }} style={styles.reset}><Text style={styles.exit}>Clear search and filters</Text></Pressable></View>}
       </ScrollView>
-      <View style={styles.tabs}>
-        {([{ label: 'Devices', icon: 'router-wireless' }, { label: 'Locations', icon: 'map-outline' }, { label: 'Analytics', icon: 'chart-bar' }, { label: 'Profile', icon: 'account-outline' }] as { label: string; icon: DeviceIcon }[]).map(tab => <Pressable key={tab.label} accessibilityRole="tab" accessibilityLabel={tab.label === 'Locations' || tab.label === 'Analytics' ? `${tab.label}, coming soon` : tab.label} accessibilityState={{ selected: tab.label === 'Devices', disabled: tab.label === 'Locations' || tab.label === 'Analytics' }} disabled={tab.label === 'Locations' || tab.label === 'Analytics'} onPress={() => { if (tab.label === 'Profile') setDialog('profile'); }} style={styles.tab}>
-          <MaterialCommunityIcons name={tab.icon} size={25} color={tab.label === 'Devices' ? colors.green : colors.light} /><Text style={[styles.tabLabel, tab.label === 'Devices' && { color: colors.green }]}>{tab.label}</Text>
-        </Pressable>)}
-      </View>
+      <BottomTabs active="Devices" onDevices={() => {}} onProfile={onProfile} />
     </View>
-    <PreviewDialog visible={dialog !== null} title={dialog === 'profile' ? 'Device preview' : 'Notifications'} onClose={() => setDialog(null)}>
-      <Text style={styles.dialogText}>{dialog === 'profile' ? 'These screens use sample devices from the supplied designs. Live device data will be connected in a later step.' : 'Live notifications are not connected in this page preview.'}</Text>
-      {dialog === 'profile' && <Pressable accessibilityRole="button" style={styles.reset} onPress={onExit}><Text style={styles.exit}>{preview ? 'Return to sign in' : 'Sign out'}</Text></Pressable>}
+    <PreviewDialog visible={dialog !== null} title="Notifications" onClose={() => setDialog(null)}>
+      <Text style={styles.dialogText}>Live notifications are not connected in this page preview.</Text>
     </PreviewDialog>
   </SafeAreaView>;
 }
@@ -66,6 +62,5 @@ const styles = StyleSheet.create({
   identity: { flex: 1, minWidth: 0, paddingTop: 4 }, name: { fontSize: 17, fontWeight: '600', color: colors.text }, hardwareId: { fontSize: 11, color: '#777777', marginTop: 3 },
   lastHeard: { alignItems: 'flex-end', maxWidth: '30%', paddingTop: 5, gap: 4 }, lastHeardLabel: { fontSize: 10, color: colors.light }, time: { fontSize: 10, color: '#777777', textAlign: 'right', lineHeight: 14 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }, readings: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, flex: 1 }, reading: { flexDirection: 'row', alignItems: 'center', gap: 5 }, readingText: { color: colors.muted, fontSize: 11 },
-  tabs: { flexDirection: 'row', backgroundColor: 'white', paddingTop: 8, paddingBottom: 8 }, tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 }, tabLabel: { color: colors.light, fontSize: 12 },
   empty: { alignItems: 'center', padding: 32, gap: 12 }, emptyTitle: { fontSize: 18, color: colors.text, fontWeight: '600' }, emptyText: { textAlign: 'center', color: colors.muted }, reset: { paddingVertical: 14 }, dialogText: { color: colors.muted, fontSize: 15, lineHeight: 23 },
 });

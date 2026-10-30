@@ -12,10 +12,11 @@ This repository is the main React Native application. The supplied conversation 
 - Local search, sample filters, output selection and map card open/close states.
 - Preview entry from sign-in, device navigation and sign out.
 - Original device/map artwork extracted from the supplied Figma archive.
+- Profile and edit-profile screens with inline validation, session-only saves, avatar choices, and searchable organization/project selection.
 
 ## Next milestones
 
-1. Organisation selection using accounts.
+1. Connect profile loading/saving and organisation selection to backend accounts APIs.
 2. Project overview using projectOverview.
 3. Connect the device list to project/cluster APIs.
 4. Connect device details/outputs/attributes to APIs and replace the static map preview with live location.
