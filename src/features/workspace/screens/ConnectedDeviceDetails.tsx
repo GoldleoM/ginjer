@@ -11,6 +11,7 @@ import { formatPacketValue, packetValues, type DeviceInspectionApi, type DeviceL
 import { formatTime } from '../services/normalizers';
 import { DownlinkSheet } from '../components/DownlinkSheet';
 import { HistoryTrends } from '../components/HistoryTrends';
+import { DeviceDataPanel } from '../components/DeviceDataPanel';
 
 const connectivityLabels: Record<string, string> = { LORAWAN: 'LoRaWAN', WIFI: 'Wi-Fi', BLUETOOTH: 'Bluetooth', WIFI_IOT_DEV: 'Wi-Fi IoT' };
 const connectivityLabel = (value?: string) => connectivityLabels[value || ''] || value;
@@ -118,16 +119,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             </> : <Text style={styles.description}>Coordinates have not been reported for this device.</Text>}
           </View>
         </ResponsiveGrid>
-        <Text accessibilityRole="header" style={styles.section}>Outputs ({device.readings.length})</Text>
-        {device.readings.length ? <ResponsiveGrid minimumWidth={156} maximumColumns={4}>{device.readings.map(reading => <View key={reading.id} style={liveStyles.card}>
-          <View style={styles.outputHeader}><Text style={styles.outputTitle}>{reading.title}</Text><MaterialCommunityIcons name={reading.icon} size={22} color={reading.color || '#858585'} /></View>
-          {reading.id === mainOutputId && <Text style={styles.mainBadge}>Main output</Text>}
-          <Text selectable style={[styles.value, reading.color ? { color: reading.color } : undefined]}>{reading.value}</Text>
-          {!!reading.label && <Text style={styles.caption}>{reading.label}</Text>}<Text selectable style={styles.outputId}>ID: {reading.id}</Text>
-        </View>)}</ResponsiveGrid> : <Text style={styles.description}>No outputs have been reported.</Text>}
-        <Text accessibilityRole="header" style={styles.section}>Attributes ({device.attributes?.length || 0})</Text>
-        {device.attributes?.length ? <View style={liveStyles.card}>{device.attributes.map(attribute => <View key={attribute.id}><DetailRow label={attribute.name} value={attribute.value} /><Text selectable style={styles.outputId}>ID: {attribute.id}</Text></View>)}</View>
-          : <Text style={styles.description}>No attributes have been reported.</Text>}
+        <DeviceDataPanel device={device} mainOutputId={mainOutputId} />
         {!!info?.latestPacket && <><Text accessibilityRole="header" style={styles.section}>Latest packet</Text><PacketCard packet={info.latestPacket} device={device} latest /></>}
         {!!info?.latestLog && <View style={{ marginTop: 18 }}><Text style={styles.cardTitle}>Latest activity</Text><LogsList logs={[info.latestLog]} /></View>}
         <Text accessibilityRole="header" style={styles.section}>Identifiers</Text>
