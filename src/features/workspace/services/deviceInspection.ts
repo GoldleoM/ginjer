@@ -10,7 +10,9 @@ export type DevicePacket = {
   payload: unknown; outputs: Record<string, unknown>; decoded: unknown;
 };
 export type PacketHistory = { packets: DevicePacket[]; currentPage: number; totalPages: number; totalRecords: number };
+export type OutputDefinition = { id: string; name: string; category?: string };
 export type DeviceInspection = {
+  outputDefinitions?: OutputDefinition[];
   hardwareName?: string; hardwareDescription?: string; model?: string; manufacturer?: string; manufacturerId?: string;
   tag?: string; tagId?: string; connectivity?: string; gpsSupported?: boolean; imageUri?: string;
   networkName?: string; networkProvider?: string; networkInterface?: string; mainOutputId?: string;
@@ -23,7 +25,7 @@ export interface DeviceInspectionApi {
 }
 
 const MODULES = 'query DeviceCatalogModules($params:ParamInput!){modules(params:$params){_id organisationId label moduleType}}';
-const HARDWARE = 'query DeviceHardware($params:ParamInput!){hardwareList(params:$params){_id organisationId name description modelNo manufacturerId tagId type gpsSupported image{location}}}';
+const HARDWARE = 'query DeviceHardware($params:ParamInput!){hardwareList(params:$params){_id organisationId name description modelNo manufacturerId tagId type gpsSupported image{location} loRaWANConfiguration{outputs{moduleId outputModuleType}}}}';
 const NETWORKS = 'query DeviceNetworks($params:ParamInput!){networkList(params:$params){_id organisationId name type networkProvider}}';
 const PACKET_FIELDS = '_id timestamp channel freq rssi snr port devEui payload';
 const SNAPSHOT = 'query DeviceInspection($params:ParamInput!){projects(params:$params){_id organisationId clusters{_id devices{_id mainOutputId networkInterface log{timestamp type message} networkServerOutputs{' + PACKET_FIELDS + '} jsonValue{' + PACKET_FIELDS + '}}}}}';
@@ -105,6 +107,9 @@ export function normalizeInspection(device: Device, snapshots: unknown, hardware
   const log = object(snapshot.log);
   const image = string(object(hardware.image).location);
   return {
+    outputDefinitions: array(object(hardware.loRaWANConfiguration).outputs).map(object).filter(output => !!output.moduleId).map(output => ({
+      id: string(output.moduleId), name: findLabel(output.moduleId, 'OUTPUT') || string(output.moduleId), category: string(output.outputModuleType) || undefined,
+    })),
     hardwareName: string(hardware.name) || undefined, hardwareDescription: string(hardware.description) || undefined,
     model: string(hardware.modelNo) || undefined, manufacturer: findLabel(hardware.manufacturerId, 'MANUFACTURER'), manufacturerId: string(hardware.manufacturerId) || undefined,
     tag: findLabel(hardware.tagId, 'TAGS'), tagId: string(hardware.tagId) || undefined,

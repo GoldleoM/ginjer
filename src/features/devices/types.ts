@@ -5,6 +5,7 @@ import type { MaterialCommunityIcons } from '@expo/vector-icons';
 export type DeviceIcon = ComponentProps<typeof MaterialCommunityIcons>['name'];
 export type Tone = 'green' | 'yellow' | 'red' | 'neutral';
 export interface DeviceReading {
+  category?: string;
   id: string;
   title: string;
   label: string;

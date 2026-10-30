@@ -7,6 +7,7 @@ import type { Workspace } from '../useWorkspace';
 import { DeviceThumbnail, Feedback, liveStyles } from '../components/WorkspaceUI';
 import { formatTime } from '../services/normalizers';
 import { sortDevices, type DeviceSort } from '../services/deviceInsights';
+import { deviceSummaryFields } from '../services/deviceData';
 
 export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace; onSelect: (device: Device) => void }) {
   const { columns, itemStyle, onLayout } = useResponsiveColumns();
@@ -44,12 +45,16 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
           <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.devEui || device.hardwareId}</Text>
           {!!device.clusterName && <Text style={styles.cluster}>{device.clusterName}</Text>}
         </View><MaterialCommunityIcons name="chevron-right" size={22} color="#83AF23" /></View>
-        {!compact && <View style={styles.readings}>{device.readings.map(reading => <View key={reading.id} style={styles.reading}>
-          <MaterialCommunityIcons name={reading.icon} size={17} color={reading.color ?? '#858585'} />
-          <Text numberOfLines={2} style={styles.readingText}>{reading.title}: {reading.summary}</Text>
+        <View style={styles.readings}>{deviceSummaryFields(device, compact).map(field => <View key={field.id} style={styles.reading}>
+          <MaterialCommunityIcons name={field.icon} size={17} color={field.color || '#858585'} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {field.main && <Text style={{ color: '#6D941B', fontSize: 10, marginBottom: 3 }}>Main output</Text>}
+            <Text numberOfLines={compact ? 2 : undefined} style={styles.readingText}>{field.name}: {field.value}{field.label && field.label !== field.value ? ' / ' + field.label : ''}</Text>
+          </View>
         </View>)}
-          {!device.readings.length && <Text style={liveStyles.caption}>No outputs reported</Text>}
-        </View>}
+          {!deviceSummaryFields(device).length && <Text style={liveStyles.caption}>No output values or attributes reported</Text>}
+          {compact && deviceSummaryFields(device).length > deviceSummaryFields(device, true).length && <Text style={liveStyles.caption}>+{deviceSummaryFields(device).length - deviceSummaryFields(device, true).length} more fields in expanded view</Text>}
+        </View>
         <Text style={styles.lastHeard}>Last heard · {device.lastHeard}{device.deleted ? ' · Archived' : ''}</Text>
       </Pressable></View>}
       ListEmptyComponent={<Feedback title={filter === 'archived' ? 'No archived devices' : 'No devices found'} message={query || filter !== 'current' ? 'Try another search or filter.' : 'This project has no devices to display.'} />} />

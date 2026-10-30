@@ -65,7 +65,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
   const model = useDeviceInspection(device, tab, inspectionApi);
   const info = model.details.data;
   const mainOutputId = info?.mainOutputId || device.mainOutputId;
-  const mainOutput = mainOutputId ? device.readings.find(reading => reading.id === mainOutputId)?.title : device.mainOutput;
+  const mainOutput = mainOutputId ? device.readings.find(reading => reading.id === mainOutputId)?.title || info?.outputDefinitions?.find(field => field.id === mainOutputId)?.name : device.mainOutput;
   const busy = refreshing || (tab === 'details' ? model.details.busy : tab === 'history' ? model.history.busy : model.logs.busy);
   const refresh = () => { model.refresh(); onRefresh?.(); };
   async function openMap() {
@@ -119,7 +119,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             </> : <Text style={styles.description}>Coordinates have not been reported for this device.</Text>}
           </View>
         </ResponsiveGrid>
-        <DeviceDataPanel device={device} mainOutputId={mainOutputId} />
+        <DeviceDataPanel device={device} mainOutputId={mainOutputId} definitions={info?.outputDefinitions} loading={model.details.busy} />
         {!!info?.latestPacket && <><Text accessibilityRole="header" style={styles.section}>Latest packet</Text><PacketCard packet={info.latestPacket} device={device} latest /></>}
         {!!info?.latestLog && <View style={{ marginTop: 18 }}><Text style={styles.cardTitle}>Latest activity</Text><LogsList logs={[info.latestLog]} /></View>}
         <Text accessibilityRole="header" style={styles.section}>Identifiers</Text>

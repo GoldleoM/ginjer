@@ -78,7 +78,7 @@ export function normalizeDevices(value: unknown, now = Date.now()): Device[] {
         const readings: DeviceReading[] = list(data.outputs).map((outputValue, index) => {
           const output = record(outputValue), name = text(output.outputName, 'Output ' + (index + 1)), label = text(output.label);
           const value = displayValue(output.value);
-          return { id: text(output.outputId, id + '-output-' + index), title: name, label, value,
+          return { id: text(output.outputId, id + '-output-' + index), title: name, label, value, category: text(output.outputModuleType) || undefined,
             summary: label && label !== value ? value + ' · ' + label : value, icon: iconFor(name), tone: readingTone(output.color), color: safeColor(output.color) };
         });
         const age = date ? now - new Date(date).getTime() : Infinity;

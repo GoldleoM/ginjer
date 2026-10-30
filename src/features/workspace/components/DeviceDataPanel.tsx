@@ -1,28 +1,26 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import { ResponsiveGrid } from '../../../layout/responsive';
+import type { OutputDefinition } from '../services/deviceInspection';
+import { deviceDataFields, initialDataTab, type DataTab } from '../services/deviceData';
 
-export function DeviceDataPanel({ device, mainOutputId }: { device: Device; mainOutputId?: string }) {
-  const [tab, setTab] = useState<'status' | 'attributes'>('status');
+export function DeviceDataPanel({ device, mainOutputId, definitions, loading = false }: { device: Device; mainOutputId?: string; definitions?: OutputDefinition[]; loading?: boolean }) {
+  const [selectedTab, setTab] = useState<DataTab | null>(null);
   const [showIds, setShowIds] = useState(false);
-  const fields = tab === 'status' ? device.readings.map(reading => ({
-    id: reading.id, name: reading.title, value: reading.value, label: reading.label,
-    icon: reading.icon, color: reading.color, main: reading.id === mainOutputId,
-  })) : (device.attributes || []).map(attribute => ({
-    id: attribute.id, name: attribute.name, value: attribute.value, label: '',
-    icon: 'tune-variant' as const, color: undefined, main: false,
-  }));
+  const groups = deviceDataFields(device, definitions, mainOutputId);
+  const tab = selectedTab || initialDataTab(groups);
+  const fields = groups[tab];
   return <View style={styles.panel}>
     <View style={styles.headingRow}><Text accessibilityRole="header" style={styles.heading}>Device Data</Text>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: showIds }} onPress={() => setShowIds(value => !value)} style={styles.detailsButton}>
         <MaterialCommunityIcons name={showIds ? 'code-braces' : 'information-outline'} size={18} color="#73962B" /><Text style={styles.detailsText}>{showIds ? 'Hide field IDs' : 'Show field IDs'}</Text>
       </Pressable>
     </View>
-    <View accessibilityRole="tablist" style={styles.tabs}>{(['status', 'attributes'] as const).map(value => <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.activeTab]}>
-      <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{value === 'status' ? 'Status' : 'Attributes'}</Text>
-      <Text style={[styles.count, tab === value && styles.activeTabText]}>{value === 'status' ? device.readings.length : device.attributes?.length || 0}</Text>
+    <View accessibilityRole="tablist" style={styles.tabs}>{(['status', 'configuration', 'attributes'] as const).map(value => <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.activeTab]}>
+      <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{value === 'status' ? 'Status' : value === 'configuration' ? 'Configuration' : 'Attributes'}</Text>
+      <Text style={[styles.count, tab === value && styles.activeTabText]}>{groups[value].length}</Text>
     </Pressable>)}</View>
     {fields.length ? <ResponsiveGrid minimumWidth={220} maximumColumns={4} gap={14}>{fields.map(field => <View key={field.id} style={styles.card}>
       <View style={styles.cardHeader}><Text style={styles.name}>{field.name}</Text><MaterialCommunityIcons name={field.icon} size={21} color={field.color || '#8DA65B'} /></View>
@@ -30,7 +28,7 @@ export function DeviceDataPanel({ device, mainOutputId }: { device: Device; main
       {!!field.label && field.label !== field.value && <Text style={styles.label}>{field.label}</Text>}
       {field.main && <View style={styles.badge}><View style={styles.dot} /><Text style={styles.badgeText}>Main output</Text></View>}
       {showIds && <Text selectable style={styles.fieldId}>ID: {field.id}</Text>}
-    </View>)}</ResponsiveGrid> : <View style={styles.empty}><MaterialCommunityIcons name="database-outline" size={26} color="#A7B38E" /><Text style={styles.label}>{tab === 'status' ? 'No status readings have been reported.' : 'No attributes have been reported.'}</Text></View>}
+    </View>)}</ResponsiveGrid> : <View style={styles.empty}>{loading ? <ActivityIndicator color="#83AF23" /> : <MaterialCommunityIcons name="database-outline" size={26} color="#A7B38E" />}<Text style={styles.label}>{loading ? 'Loading device fields...' : tab === 'attributes' ? 'No attributes are available.' : 'No ' + (tab === 'configuration' ? 'configuration' : 'status') + ' fields are available.'}</Text></View>}
   </View>;
 }
 const styles = StyleSheet.create({
