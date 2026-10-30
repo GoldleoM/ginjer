@@ -24,14 +24,20 @@ Sign in with your Ginjer account to open **Projects**. The app loads accessible 
 Project cards show live names, device counts, cluster/member counts, and read-only enabled status. There is no Add Project action. Creation dates and online/total device ratios are not returned by the supplied collection and are not fabricated.
 
 - The workspace bar switches organizations and returns to the Projects list across Devices, Locations, Analytics, and Profile. The information button shows project description, status, membership/device/cluster counts, non-LoRaWAN device count, location, and IDs.
-- **Devices** shows real names, hardware IDs, clusters, latest readings, and recorded timestamps. Search by name, hardware ID, DevEUI, or cluster. Filters include current/archived devices, readings recorded in the last 24 hours, and explicitly red-colored outputs.
-- **Device Details** includes resolved hardware/manufacturer/model/network/tag information, the configured main output, all outputs and attributes, coordinates, latest radio packet details, and visible identifiers. Its History tab loads paginated received packets with time filters and expandable payloads. Its Logs tab separately loads device activity messages, including honest empty/error states. Pull to refresh or use the refresh button.
-- **Locations** uses actual returned coordinates with pan/zoom, fit-to-devices, grouped markers, device cards, and detail navigation. Devices without valid coordinates remain available in a separate searchable list. Coordinate values of zero are valid.
-- **Analytics** displays the latest reported outputs and attributes, with search and links back to devices. Numeric ranges, historical series, and configured dashboards are not invented. The Modules catalog shows the returned module labels, types, IDs, and ownership, with searchable virtualized lists.
-- **Profile** displays the signed-in identity and membership role, and uses the same organization/project selection as the other tabs. Account details are read only.
+- **Devices** shows real names, hardware IDs, clusters, latest readings, and recorded timestamps. Search by name, hardware ID, DevEUI, or cluster. Filters include current/archived devices, readings recorded in the last 24 hours, and explicitly red-colored outputs. Switch between compact rows and expanded cards, and sort by name or last-heard time.
+- **Device Details** includes resolved hardware/manufacturer/model/network/tag information, the configured main output, all outputs and attributes, coordinates, latest radio packet details, and visible identifiers. Its History tab loads paginated received packets with time filters and expandable payloads. Its Logs tab separately loads device activity messages, including honest empty/error states. History also offers numeric charts with selectable samples and summary statistics for the loaded page. Pull to refresh or use the refresh button.
+- **Locations** uses actual returned coordinates with pan/zoom, fit-to-devices, grouped markers, device cards, and detail navigation. Devices without valid coordinates remain available in a separate searchable list. Coordinate values of zero are valid. Selected device cards also open the Send Downlink sheet.
+- **Analytics** displays the latest reported outputs and attributes, with search and links back to devices. Historical numeric charts are available in each device's History tab; configured dashboards are not invented. The Modules catalog shows the returned module labels, types, IDs, and ownership, with searchable virtualized lists.
+- **Profile** displays the signed-in identity and membership role, and uses the same organization/project selection as the other tabs. Edit the signed-in user's first and last name; saved names update the shared identity without replacing refreshed tokens.
 - Refresh, loading, retry, permission/session errors, and empty states are included. Requests from an old scope are cancelled; responses from a previous signed-in session cannot update the current token.
 
-The supplied collection omits history operations, but live schema inspection verified deviceHistoricalData and deviceLogs; both are now integrated. See docs/device-inspection-api.md for their schemas and verification scope. Profile updates, notification feeds, and dashboard configuration remain unavailable. Its Send Downlink operation has no usable payload definition; no hardware commands are exposed or sent.
+- **Send Downlink** opens from device details or a selected map card. It discovers hardware-supported interfaces and saved commands; custom commands use a validated JSON editor because the API provides no device-specific form definitions. Sending occurs only on the user's Send action; the sheet prevents duplicate taps and shows the server's response.
+- **Notifications** provides active banners, search/status filters, and links to matching devices. It refreshes the selected project once a minute while active.
+- **Automation** shows configured rules, summary counts, conditions, linked devices, command steps, and paginated run history. Rule editing and manual execution are not exposed.
+- **Health** checks last-heard windows, red readings, missing outputs, and missing coordinates. It distinguishes unknown timestamps and does not infer that a device is offline.
+- **Create account** uses the existing sign-up API, with password confirmation and a return-to-sign-in flow. Access to an existing organization requires an administrator invitation.
+
+The supplied collection omits several available operations. Live schema inspection verified the additional history, notifications, automation, saved-command, and account APIs. See [device inspection](docs/device-inspection-api.md), [feature API contracts and verification](docs/workspace-features-api.md), and the [remaining roadmap](docs/ROADMAP.md). No production mutations or device commands were executed during development.
 
 ## Sessions
 
@@ -49,7 +55,7 @@ OpenStreetMap's public service has its own [tile usage policy](https://operation
 
 ## Design preview
 
-Choose **Preview sample screens** on the sign-in page to review the original reference screens without credentials. All four tabs are available, including temporary profile editing, public/office sample dashboards, and the static India reference map.
+Choose **Preview app** on the sign-in page to review the original reference screens without credentials. All four tabs are available, including temporary profile editing, public/office sample dashboards, and the static India reference map.
 
 Preview values and map positions are fixtures. They never replace failed or missing live API responses. The preview's account changes last only for that preview session.
 
@@ -80,7 +86,7 @@ npm run build:web
 npx expo export --platform android --output-dir .preview/android
 ```
 
-Passed during integration: TypeScript, all 23 tests, and live read-only checks using the app's transport/adapters across two accessible organizations, their project lists, selected project devices, and a module catalog. Refreshed tokens were handled, and the API's browser CORS preflight allowed the required headers.
+Validation includes TypeScript, 65 automated tests, and live read-only checks using the app's transport/adapters across two accessible organizations and eight project scopes, including rules, notifications, hardware-bound downlink discovery, and run history. Refreshed tokens were handled, and the API's browser CORS preflight allowed the required headers.
 
 Browser visual/interaction QA is pending because the browser access host is unavailable. Password-based sign-in could not be exercised with the collection's empty password; live integration was verified using its supplied token. Physical-device QA, background/foreground network behavior, and deployment testing remain outstanding.
 

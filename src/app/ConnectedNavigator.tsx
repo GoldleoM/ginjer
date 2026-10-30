@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, Text, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabs } from '../components/BottomTabs';
 import type { AuthUser } from '../features/auth/types';
@@ -15,11 +16,16 @@ import { ConnectedLocations } from '../features/workspace/screens/ConnectedLocat
 import { ProjectsScreen } from '../features/workspace/screens/ProjectsScreen';
 import { ConnectedProfile } from '../features/workspace/screens/ConnectedProfile';
 import type { Module, WorkspaceApi } from '../features/workspace/types';
+import { useOperations } from '../features/workspace/useOperations';
+import { ConnectedAutomation, ConnectedNotifications, NotificationBanner } from '../features/workspace/screens/ConnectedOperations';
+import { ConnectedHealth } from '../features/workspace/screens/ConnectedHealth';
+import type { AccountIdentity } from '../features/auth/services/accountApi';
 
 const liveApi = createWorkspaceApi(authenticatedGraphql);
-type Tab = 'Projects' | 'Devices' | 'Locations' | 'Analytics' | 'Profile';
-export function ConnectedNavigator({ user, onExit, api = liveApi }: { user: AuthUser; onExit: () => void; api?: WorkspaceApi }) {
+type Tab = 'Projects' | 'Devices' | 'Locations' | 'Analytics' | 'Profile' | 'Notifications' | 'Automation' | 'Health';
+export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi }: { user: AuthUser; onExit: () => void; onUserUpdated: (identity: AccountIdentity) => void; api?: WorkspaceApi }) {
   const workspace = useWorkspace(api, user);
+  const operations = useOperations(workspace.account?.id || '', workspace.project?.id || '');
   const [tab, setTab] = useState<Tab>('Projects');
   const [detail, setDetail] = useState<Device | null>(null);
   const [picker, setPicker] = useState<'organizations' | null>(null);
@@ -50,17 +56,29 @@ export function ConnectedNavigator({ user, onExit, api = liveApi }: { user: Auth
   const body = activeTab === 'Projects'
     ? <ProjectsScreen key={workspace.accountId} user={user} workspace={workspace} onOpen={openProject} onOrganizations={() => setPicker('organizations')} onProfile={() => setTab('Profile')} />
     : activeTab === 'Profile'
-      ? <ConnectedProfile user={user} workspace={workspace} onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onLogout={onExit} />
+      ? <ConnectedProfile user={user} workspace={workspace} onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onLogout={onExit} onUserUpdated={onUserUpdated} />
     : workspace.loading && !workspace.devices.length ? <Feedback busy />
       : workspace.error ? <Feedback title="Unable to load workspace" message={workspace.error} onRetry={workspace.refresh} />
         : !workspace.account ? <Feedback title="No active organizations" message="You do not have an active, accepted membership. Your account details are available in Profile." />
           : !workspace.project ? <Feedback title="No projects available" message="Choose another organization to view its projects and devices." />
-            : activeTab === 'Analytics' ? <ConnectedAnalytics key={workspace.scope} workspace={workspace} onSelect={setDetail} onModules={() => { workspace.loadModules(); setModulesOpen(true); }} />
+            : activeTab === 'Notifications' ? <ConnectedNotifications key={workspace.scope} operations={operations} devices={workspace.devices} onDevice={setDetail} />
+              : activeTab === 'Automation' ? <ConnectedAutomation key={workspace.scope} operations={operations} devices={workspace.devices} onDevice={setDetail} />
+              : activeTab === 'Health' ? <ConnectedHealth key={workspace.scope} workspace={workspace} onSelect={setDetail} />
+              : activeTab === 'Analytics' ? <ConnectedAnalytics key={workspace.scope} workspace={workspace} onSelect={setDetail} onModules={() => { workspace.loadModules(); setModulesOpen(true); }} />
               : activeTab === 'Locations' ? <ConnectedLocations key={workspace.scope} workspace={workspace} onDetails={setDetail} onBackToDevices={() => setTab('Devices')} />
                 : <ConnectedDevices key={workspace.scope} workspace={workspace} onSelect={setDetail} />;
   return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom', 'left', 'right']}><View style={liveStyles.shell}>
     {activeTab !== 'Projects' && <WorkspaceBar organization={workspace.account?.name} project={workspace.project?.name} busy={workspace.loading}
-      onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onInfo={() => setProjectInfo(true)} onRefresh={workspace.refresh} />}
+      onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onInfo={() => setProjectInfo(true)} onRefresh={() => { workspace.refresh(); operations.refresh(); }} />}
+    {!!workspace.project && activeTab !== 'Profile' && <>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
+        {(['Notifications', 'Automation', 'Health'] as const).map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: activeTab === item }} onPress={() => setTab(item)} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: activeTab === item ? '#83AF23' : '#DDDDDD', backgroundColor: activeTab === item ? '#F1F6E7' : 'white' }}>
+          <MaterialCommunityIcons name={item === 'Notifications' ? 'bell-outline' : item === 'Automation' ? 'cog-sync-outline' : 'heart-pulse'} size={19} color="#6D941B" />
+          <Text style={{ color: '#6D941B', fontSize: 12 }}>{item}{item === 'Notifications' && !operations.notifications.error && operations.notifications.data.some(item => item.status === 'ACTIVE') ? ' (' + operations.notifications.data.filter(item => item.status === 'ACTIVE').length + ')' : ''}</Text>
+        </Pressable>)}
+      </ScrollView>
+      {activeTab !== 'Notifications' && <NotificationBanner operations={operations} devices={workspace.devices} onDevice={setDetail} onNotifications={() => setTab('Notifications')} />}
+    </>}
     <View style={{ flex: 1, minHeight: 0, minWidth: 0 }}>{body}</View>
     <BottomTabs active={activeTab} onProjects={showProjects} projectSelected={!!workspace.project} onDevices={() => setTab('Devices')} onLocations={() => setTab('Locations')} onAnalytics={() => setTab('Analytics')} onProfile={() => setTab('Profile')} />
   </View>

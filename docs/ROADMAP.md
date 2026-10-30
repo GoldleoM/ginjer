@@ -9,15 +9,24 @@
 - Device packet history with date ranges and pagination, activity logs, latest packet radio data, refresh controls, and distinct error/empty states.
 - Analytics from actual current readings and attributes, plus a searchable module catalog.
 - Real-coordinate maps with pan/zoom, fit, overlapping-device selection, and missing-coordinate lists.
-- Read-only live profile identity and membership details.
+- Compact/expanded device lists, name/last-heard sorting, and device-ID search.
+- Downlink bottom sheet from device details and map cards: hardware-bound interfaces, saved command selection, validated custom JSON, optional port, animated sending status, and the actual server response. One saved command can be sent in two taps from device details. No command is sent merely by opening the panel.
+- In-app notification banners and a searchable, status-filtered notification panel with scope-safe device routing. Polling refreshes the selected project every minute while the app is active.
+- Automation summary, searchable rules, conditions, linked devices, configured command steps, and paginated run history. Rule configuration and execution remain read only.
+- Device health panel with configurable 1-hour, 24-hour, or 7-day last-heard windows; unknown timestamps, red readings, missing outputs, and missing location checks. These are data-quality/activity indicators, not proof that a device is online or offline.
+- Numeric historical charts with minimum/average/maximum and selectable samples for the currently loaded history page.
+- Sign-up form connected to the existing backend, with password confirmation and a return-to-sign-in flow. Existing organization access still requires an administrator invitation.
+- Live profile name editing, persisted without overwriting refreshed authentication tokens; shared organization/project switching.
 
 ## Needs additional backend support
 
-1. Profile updates and phone/avatar fields.
-2. Configured dashboard/module bindings and historical analytics charts beyond the implemented packet-history list.
-3. Notification feeds and alert history.
-4. Downlink interface discovery, payload schemas, and command permission/confirmation requirements.
-5. Any additional non-LoRaWAN device endpoints beyond the provided project counts.
+1. Device-specific downlink form schemas and graphics. The API exposes controller IDs/code and saved values, but no field definitions for the reference Valve/Value dropdowns. Custom values therefore require an exact JSON payload supplied by a knowledgeable user; controller code is never executed by the app.
+2. Configured web dashboards, custom analytics widgets, cross-page history aggregation, and digital-twin assets/state mappings.
+3. Automation creation/editing/manual runs, notification acknowledgement, and system push notifications. Existing rules and notifications are available in the app; no automation or alert status is modified during inspection.
+4. Phone/avatar editing and a user-initiated organization-join request flow. No administrator invitation is issued automatically.
+5. WhatsApp health checks/chatbot: server-side Meta credentials, webhook endpoint, approved message templates, recipient consent, and routing contract are required. Credentials must never be bundled in the mobile app.
+6. Voice commands, home-screen widgets, and Intellidrip/Airport/Dehn panels: require defined command mappings, native build configuration, and use-case-specific data/contracts.
+7. Additional non-LoRaWAN endpoints beyond the supplied project counts and LoRaWAN hardware controller bindings.
 
 ## Release verification
 
@@ -25,5 +34,6 @@
 - Verify password-based sign-in with working credentials, native cold-start restoration, and expired-session recovery on devices.
 - Exercise slow/offline requests, long readings, large projects, and organization switching.
 - Select/configure the deployment map tile service.
+- Exercise sign-up, profile saves, and one approved downlink on a designated test device. Their requests are covered with mock transports and verified schema definitions; no production mutations or device commands were performed during implementation.
 
-The sanitized operations document contains query definitions only. Collection tokens and account-specific values remain outside source control. No downlinks have been sent.
+The checked-in API documents contain sanitized operation definitions only. Collection tokens and account-specific values remain outside source control. No downlinks have been sent during development.

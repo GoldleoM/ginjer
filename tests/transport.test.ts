@@ -26,6 +26,7 @@ test('HTTP 401 and GraphQL authentication failures expire the session',async()=>
   for (const fetcher of [
     (async()=>response({},401)) as typeof fetch,
     (async()=>response({errors:[{message:'jwt expired',extensions:{code:'UNAUTHENTICATED'}}]})) as typeof fetch,
+    (async()=>response({errors:[{message:'Invalid User Token'}]})) as typeof fetch,
   ]) {
     const h=harness(fetcher); await assert.rejects(h.request('query {}'),error=>error instanceof ApiError&&error.code==='auth');
     assert.equal(h.stats().expired,1); assert.equal(h.getToken(),null);

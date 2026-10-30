@@ -48,8 +48,8 @@ export function Feedback({ title, message, busy, onRetry }: { title?: string; me
 export function InfoDialog({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
     <SafeAreaView style={styles.overlay} edges={['top', 'bottom', 'left', 'right']}><Pressable accessibilityRole="button" accessibilityLabel="Close information" onPress={onClose} style={StyleSheet.absoluteFill} />
-      <View accessibilityViewIsModal style={styles.dialog}><View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text>
-        <ActionIcon icon="close" label="Close information" onPress={onClose} /></View><ScrollView style={{ flexShrink: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: 12 }}>{children}</ScrollView></View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} accessibilityViewIsModal style={styles.dialog}><View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text>
+        <ActionIcon icon="close" label="Close information" onPress={onClose} /></View><ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: 12 }}>{children}</ScrollView></KeyboardAvoidingView>
     </SafeAreaView>
   </Modal>;
 }

@@ -44,6 +44,19 @@ export async function restoreSession(): Promise<AuthUser | null> {
     return { ...identity, token };
   } catch { return null; }
 }
+// Update display identity without replacing a token rotated by concurrent API calls.
+export async function updateSessionIdentity(identity: Pick<AuthUser, '_id' | 'firstName' | 'lastName' | 'emailId'>) {
+  const version = sessionVersion;
+  await enqueue(async () => {
+    if (version !== sessionVersion) throw new Error('Your session changed. Sign in again.');
+    const raw = Platform.OS === 'web' ? browserUser : await SecureStore.getItemAsync(USER_KEY);
+    const current = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!current || current._id !== identity._id || version !== sessionVersion) throw new Error('Your session changed. Sign in again.');
+    const updated = { ...current, ...identity };
+    if (Platform.OS === 'web') browserUser = updated;
+    else await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated));
+  });
+}
 export async function clearToken(): Promise<void> {
   ++sessionVersion; browserToken = null; browserUser = null;
   await enqueue(async () => {

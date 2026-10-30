@@ -46,7 +46,7 @@ export function createGraphqlTransport(deps: Dependencies) {
       if (!result || typeof result !== 'object' || Array.isArray(result)) throw new ApiError('The service returned an unreadable response. Please try again.', 'server');
       if (Array.isArray(result.errors) && result.errors.length) {
         const authFailure = result.errors.some(error => /UNAUTHENTICATED|TOKEN_EXPIRED|INVALID_TOKEN/i.test(error.extensions?.code ?? '')
-          || /jwt expired|invalid token|token expired|not authenticated|unauthenticated|unauthori[sz]ed/i.test(error.message ?? ''));
+          || /jwt expired|invalid (?:user )?token|token expired|not authenticated|unauthenticated|unauthori[sz]ed/i.test(error.message ?? ''));
         if (authFailure && authenticated && isCurrent()) await deps.onExpired();
         if (!authFailure && result.errors.some(error => /FORBIDDEN|PERMISSION_DENIED|ACCESS_DENIED/i.test(error.extensions?.code ?? ''))) throw new ApiError('You do not have permission to view this information.', 'permission');
         throw new ApiError(authFailure ? (authenticated ? 'Your session has expired. Please sign in again.' : 'Check your email and password.')

@@ -6,23 +6,31 @@ import type { Device } from '../../devices/types';
 import type { Workspace } from '../useWorkspace';
 import { DeviceThumbnail, Feedback, liveStyles } from '../components/WorkspaceUI';
 import { formatTime } from '../services/normalizers';
+import { sortDevices, type DeviceSort } from '../services/deviceInsights';
 
 export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace; onSelect: (device: Device) => void }) {
   const { columns, itemStyle, onLayout } = useResponsiveColumns();
   const [query, setQuery] = useState('');
+  const [compact, setCompact] = useState(false);
+  const [sort, setSort] = useState<DeviceSort>('name');
+  const listColumns = compact ? 1 : columns;
   const [filter, setFilter] = useState<'current' | 'recent' | 'attention' | 'archived'>('current');
-  const devices = useMemo(() => workspace.devices.filter(device =>
+  const devices = useMemo(() => sortDevices(workspace.devices.filter(device =>
     (filter === 'archived' ? device.deleted : !device.deleted)
     && (filter !== 'recent' || device.recent) && (filter !== 'attention' || device.needsAttention)
-    && (device.name + ' ' + device.hardwareId + ' ' + device.devEui + ' ' + device.clusterName).toLowerCase().includes(query.trim().toLowerCase())
-  ), [workspace.devices, query, filter]);
+    && (device.name + ' ' + device.id + ' ' + device.hardwareId + ' ' + device.devEui + ' ' + device.clusterName).toLowerCase().includes(query.trim().toLowerCase())
+  ), sort), [workspace.devices, query, filter, sort]);
   return <View style={{ flex: 1, minHeight: 0 }} onLayout={onLayout}>
-    <FlatList key={columns} numColumns={columns} columnWrapperStyle={columns > 1 ? { gap: 12 } : undefined}
+    <FlatList key={listColumns} numColumns={listColumns} columnWrapperStyle={listColumns > 1 ? { gap: 12 } : undefined}
       ListHeaderComponent={<View style={{ marginHorizontal: -12 }}>
     <View style={styles.searchBox}><MaterialCommunityIcons name="magnify" size={23} color="#858585" />
       <TextInput value={query} onChangeText={setQuery} accessibilityLabel="Search devices by name, ID, or cluster" placeholder="Search Devices" autoCapitalize="none" autoCorrect={false}
         style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
       {!!query && <Pressable accessibilityRole="button" accessibilityLabel="Clear device search" onPress={() => setQuery('')} style={styles.clear}><MaterialCommunityIcons name="close" size={22} color="#858585" /></Pressable>}
+    </View>
+    <View style={[styles.filters, { marginBottom: 8 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={compact ? 'Show expanded device cards' : 'Show compact device rows'} onPress={() => setCompact(value => !value)} style={styles.chip}><Text style={styles.chipText}>{compact ? 'View: Compact' : 'View: Expanded'}</Text></Pressable>
+      {([['name', 'Name'], ['newest', 'Newest heard'], ['oldest', 'Oldest heard']] as const).map(([id, label]) => <Pressable key={id} accessibilityRole="button" accessibilityLabel={'Sort devices by ' + label} accessibilityState={{ selected: sort === id }} onPress={() => setSort(id)} style={[styles.chip, sort === id && styles.selectedChip]}><Text style={styles.chipText}>{label}</Text></Pressable>)}
     </View>
     <View style={styles.filters}>{([['current', 'All devices'], ['recent', 'Last 24 hours'], ['attention', 'Red readings'], ['archived', 'Archived']] as const).map(([id, label]) =>
       <Pressable key={id} accessibilityRole="button" accessibilityState={{ selected: id === filter }} onPress={() => setFilter(id)}
@@ -30,19 +38,18 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
     <Text style={styles.count}>{devices.length} {devices.length === 1 ? 'device' : 'devices'}{workspace.updatedAt ? ' · Updated ' + formatTime(workspace.updatedAt) : ''}</Text>
       </View>} data={devices} keyExtractor={device => device.id} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#83AF23" />}
-      renderItem={({ item: device }) => <View style={itemStyle}><Pressable accessibilityRole="button" accessibilityLabel={device.name + ', ' + device.hardwareId + '. View details'}
+      renderItem={({ item: device }) => <View style={compact ? { width: '100%' } : itemStyle}><Pressable accessibilityRole="button" accessibilityLabel={device.name + ', ' + device.hardwareId + '. View details'}
         onPress={() => onSelect(device)} style={({ pressed }) => [liveStyles.card, pressed && { opacity: 0.7 }]}>
         <View style={styles.identity}><DeviceThumbnail device={device} /><View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.hardwareId}</Text>
+          <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.devEui || device.hardwareId}</Text>
           {!!device.clusterName && <Text style={styles.cluster}>{device.clusterName}</Text>}
         </View><MaterialCommunityIcons name="chevron-right" size={22} color="#83AF23" /></View>
-        <View style={styles.readings}>{device.readings.slice(0, 2).map(reading => <View key={reading.id} style={styles.reading}>
+        {!compact && <View style={styles.readings}>{device.readings.map(reading => <View key={reading.id} style={styles.reading}>
           <MaterialCommunityIcons name={reading.icon} size={17} color={reading.color ?? '#858585'} />
           <Text numberOfLines={2} style={styles.readingText}>{reading.title}: {reading.summary}</Text>
         </View>)}
           {!device.readings.length && <Text style={liveStyles.caption}>No outputs reported</Text>}
-          {device.readings.length > 2 && <Text style={liveStyles.caption}>+{device.readings.length - 2} more outputs</Text>}
-        </View>
+        </View>}
         <Text style={styles.lastHeard}>Last heard · {device.lastHeard}{device.deleted ? ' · Archived' : ''}</Text>
       </Pressable></View>}
       ListEmptyComponent={<Feedback title={filter === 'archived' ? 'No archived devices' : 'No devices found'} message={query || filter !== 'current' ? 'Try another search or filter.' : 'This project has no devices to display.'} />} />

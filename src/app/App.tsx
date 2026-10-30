@@ -6,10 +6,12 @@ import type { AuthUser } from '../features/auth/types';
 import { signOut } from '../features/auth/services/auth';
 import { onSessionExpired, restoreSession } from '../services/session';
 import { MainNavigator } from './MainNavigator';
+import { SignUpScreen } from '../features/auth/screens/SignUpScreen';
 
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [preview, setPreview] = useState(false);
+  const [registering, setRegistering] = useState(false);
   const [restoring, setRestoring] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -33,8 +35,9 @@ export default function App() {
   return <SafeAreaProvider>
     <StatusBar barStyle="dark-content" />
     {restoring ? <View style={styles.starting}><ActivityIndicator color="#83AF23" accessibilityLabel="Restoring your session" /><Text style={styles.startingText}>Opening Ginjer…</Text></View>
-      : user || preview ? <MainNavigator user={user} onExit={exitSession} preview={preview} />
-        : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
+      : user || preview ? <MainNavigator user={user} onExit={exitSession} preview={preview} onUserUpdated={identity => setUser(current => current?._id === identity._id ? { ...current, ...identity } : current)} />
+        : registering ? <SignUpScreen onBack={() => setRegistering(false)} />
+          : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} onSignUp={() => setRegistering(true)} />}
     <Modal visible={busy || !!error} transparent animationType="fade" onRequestClose={() => { if (!busy) setError(''); }}>
       <SafeAreaView style={styles.overlay}><View style={styles.feedback}><ScrollView contentContainerStyle={{ gap: 16 }}>
         {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out…</Text></>

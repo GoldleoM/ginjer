@@ -21,9 +21,11 @@ import type { AuthUser } from "../types";
 export function SignInScreen({
   onSignedIn,
   onPreview,
+  onSignUp,
 }: {
   onSignedIn: (user: AuthUser) => void;
   onPreview: () => void;
+  onSignUp: () => void;
 }) {
   const { isTablet, height, fontScale } = useResponsiveLayout();
   const [availableHeight, setAvailableHeight] = useState(height);
@@ -172,14 +174,17 @@ export function SignInScreen({
                 <Text style={styles.buttonText}>Log In</Text>
               )}
             </Pressable>
+            <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <Pressable accessibilityRole="button" onPress={onSignUp} disabled={busy} style={styles.previewButton}><Text style={styles.previewText}>Create account</Text></Pressable>
             <Pressable
               accessibilityRole='button'
               onPress={onPreview}
               disabled={busy}
               style={styles.previewButton}
             >
-              <Text style={styles.previewText}>Preview sample screens</Text>
+              <Text style={styles.previewText}>Preview app</Text>
             </Pressable>
+            </View>
             {!compact && <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>}
           </View>
         </View>

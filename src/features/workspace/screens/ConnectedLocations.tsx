@@ -7,6 +7,7 @@ import { LocationDeviceCard } from '../../locations/components/LocationDeviceCar
 import type { Workspace } from '../useWorkspace';
 import { LiveMap } from '../components/LiveMap';
 import { DeviceThumbnail, Feedback, liveStyles } from '../components/WorkspaceUI';
+import { DownlinkSheet } from '../components/DownlinkSheet';
 
 export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { workspace: Workspace; onDetails: (device: Device) => void; onBackToDevices: () => void }) {
   const { height } = useResponsiveLayout();
@@ -14,6 +15,7 @@ export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { 
   const [query, setQuery] = useState('');
   const [missing, setMissing] = useState(false);
   const [selectedId, setSelectedId] = useState('');
+  const [downlinkDevice, setDownlinkDevice] = useState<Device | null>(null);
   const [mapHeight, setMapHeight] = useState(0);
   const [cardHeight, setCardHeight] = useState(132);
   useEffect(() => {
@@ -44,9 +46,10 @@ export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { 
         {controls}
         {mapped.length ? <View style={{ flex: 1, minHeight: Math.max(280, Math.min(height * 0.58, 640)) }} onLayout={event => setMapHeight(event.nativeEvent.layout.height)}>
           <LiveMap devices={mapped} selectedId={selectedId} onSelect={device => setSelectedId(current => current === device.id ? '' : device.id)} onBackground={() => setSelectedId('')} />
-          {selected && <LocationDeviceCard device={selected} top={Math.max(12, mapHeight - cardHeight - 30)} maxHeight={Math.max(120, mapHeight - 24)} onLayout={setCardHeight} onDetails={() => onDetails(selected)} />}
+          {selected && <LocationDeviceCard device={selected} top={Math.max(12, mapHeight - cardHeight - 30)} maxHeight={Math.max(120, mapHeight - 24)} onLayout={setCardHeight} onDetails={() => onDetails(selected)} onDownlink={() => setDownlinkDevice(selected)} />}
         </View> : <Feedback title="No locations to display" message={unmapped.length ? 'These devices have not reported valid coordinates. Select Without location to view them.' : query ? 'Try another device name or ID.' : 'This project has no located devices.'} />}
       </ScrollView>}
+    {downlinkDevice && <DownlinkSheet key={downlinkDevice.id} device={workspace.devices.find(device => device.id === downlinkDevice.id) || downlinkDevice} onClose={() => setDownlinkDevice(null)} />}
   </View>;
 }
 const styles = StyleSheet.create({

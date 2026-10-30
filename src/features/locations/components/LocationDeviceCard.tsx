@@ -5,8 +5,8 @@ import { ReadingIcon } from '../../devices/components/DeviceUI';
 import type { Device } from '../../devices/types';
 import { DeviceThumbnail } from '../../workspace/components/WorkspaceUI';
 
-export function LocationDeviceCard({ device, top, maxHeight, onDetails, onLayout }: {
-  device: Device; top: number; maxHeight?: number; onDetails: () => void; onLayout: (height: number) => void;
+export function LocationDeviceCard({ device, top, maxHeight, onDetails, onLayout, onDownlink }: {
+  device: Device; top: number; maxHeight?: number; onDetails: () => void; onLayout: (height: number) => void; onDownlink?: () => void;
 }) {
   return <View accessibilityLabel={'Information for ' + device.name} style={[styles.card, { top, maxHeight }]}
     onLayout={event => onLayout(event.nativeEvent.layout.height)}>
@@ -24,6 +24,7 @@ export function LocationDeviceCard({ device, top, maxHeight, onDetails, onLayout
         <MaterialCommunityIcons name="chevron-right" size={24} color="#303030" />
       </Pressable>
     </View>
+    {onDownlink && <Pressable accessibilityRole="button" onPress={onDownlink} style={{ minHeight: 44, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}><MaterialCommunityIcons name="download-network-outline" size={19} color="#6D941B" /><Text style={{ color: '#6D941B', fontSize: 13 }}>Send Downlink</Text></Pressable>}
     </ScrollView>
   </View>;
 }

@@ -8,6 +8,7 @@ import { LocationsScreen } from '../features/locations/screens/LocationsScreen';
 import { demoLocationsRepository } from '../features/locations/services/locations';
 import { ProfileNavigator } from '../features/profile/ProfileNavigator';
 import { createDemoProfileRepository } from '../features/profile/services/profile';
+import type { AccountIdentity } from '../features/auth/services/accountApi';
 
 function DemoNavigator({ onExit, preview }: { onExit: () => void; preview: boolean }) {
   const [tab, setTab] = useState<'devices' | 'locations' | 'analytics' | 'profile'>('devices');
@@ -24,7 +25,7 @@ function DemoNavigator({ onExit, preview }: { onExit: () => void; preview: boole
   return <DeviceNavigator onExit={onExit} preview={preview} onLocations={onLocations} onProfile={onProfile} onAnalytics={onAnalytics} />;
 }
 
-export function MainNavigator({ user, preview, onExit }: { user: AuthUser | null; preview: boolean; onExit: () => void }) {
+export function MainNavigator({ user, preview, onExit, onUserUpdated }: { user: AuthUser | null; preview: boolean; onExit: () => void; onUserUpdated: (identity: AccountIdentity) => void }) {
   if (preview) return <DemoNavigator preview onExit={onExit} />;
-  return user ? <ConnectedNavigator key={user._id} user={user} onExit={onExit} /> : null;
+  return user ? <ConnectedNavigator key={user._id} user={user} onExit={onExit} onUserUpdated={onUserUpdated} /> : null;
 }

@@ -15,7 +15,7 @@ const tabs: { label: Tab; icon: ComponentProps<typeof MaterialCommunityIcons>['n
 
 export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProfile, onProjects, projectSelected = true }: {
   onProjects?: () => void; projectSelected?: boolean;
-  active: Tab; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onProfile: () => void;
+  active: Tab | 'Notifications' | 'Automation' | 'Health'; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onProfile: () => void;
 }) {
   const { isTablet } = useResponsiveLayout();
   const actions: Record<Tab, (() => void) | undefined> = { Projects: onProjects, Devices: onDevices, Locations: onLocations, Analytics: onAnalytics, Profile: onProfile };

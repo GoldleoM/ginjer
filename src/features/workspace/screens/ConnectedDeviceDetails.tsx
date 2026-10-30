@@ -9,6 +9,8 @@ import { ActionIcon, DetailRow, DeviceThumbnail, Feedback, liveStyles } from '..
 import { useDeviceInspection, type InspectionTab } from '../useDeviceInspection';
 import { formatPacketValue, packetValues, type DeviceInspectionApi, type DeviceLog, type DevicePacket, type HistoryRange } from '../services/deviceInspection';
 import { formatTime } from '../services/normalizers';
+import { DownlinkSheet } from '../components/DownlinkSheet';
+import { HistoryTrends } from '../components/HistoryTrends';
 
 const connectivityLabels: Record<string, string> = { LORAWAN: 'LoRaWAN', WIFI: 'Wi-Fi', BLUETOOTH: 'Bluetooth', WIFI_IOT_DEV: 'Wi-Fi IoT' };
 const connectivityLabel = (value?: string) => connectivityLabels[value || ''] || value;
@@ -57,6 +59,8 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
 }) {
   const [tab, setTab] = useState<InspectionTab>('details');
   const [mapError, setMapError] = useState('');
+  const [downlinkOpen, setDownlinkOpen] = useState(false);
+  const [historyView, setHistoryView] = useState<'packets' | 'trends'>('packets');
   const model = useDeviceInspection(device, tab, inspectionApi);
   const info = model.details.data;
   const mainOutputId = info?.mainOutputId || device.mainOutputId;
@@ -85,6 +89,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             <Text selectable style={styles.caption}>{device.devEui ? 'DevEUI: ' + device.devEui : 'Hardware ID: ' + device.hardwareId}</Text>
             <Text style={styles.caption}>Last heard: {device.lastHeardDetail}</Text></View></View>
         {device.deleted && <Text style={styles.archived}>Archived device</Text>}
+        {!device.deleted && <Pressable accessibilityRole="button" onPress={() => setDownlinkOpen(true)} style={[styles.range, styles.selectedRange, { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }]}><MaterialCommunityIcons name="download-network-outline" size={20} color="#6D941B" /><Text style={styles.linkText}>Send Downlink</Text></Pressable>}
         {!!device.description && <Text style={styles.description}>{device.description}</Text>}
         {!!model.details.error && <Text accessibilityRole="alert" style={styles.error}>{model.details.error}</Text>}
         {!!info?.warnings.length && <View style={styles.warning}><Text style={styles.label}>Some device information could not be loaded.</Text>
@@ -136,6 +141,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
         </ResponsiveGrid></View>
       </> : tab === 'history' ? <>
         <Text accessibilityRole="header" style={styles.sectionTitle}>Packet history</Text><Text style={styles.description}>{device.name}</Text>
+        <View style={styles.ranges}>{(['packets', 'trends'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: historyView === value }} onPress={() => setHistoryView(value)} style={[styles.range, historyView === value && styles.selectedRange]}><Text style={styles.rangeText}>{value === 'packets' ? 'Packets' : 'Charts'}</Text></Pressable>)}</View>
         <View style={styles.ranges}>{([['24h', '24 hours'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All time']] as [HistoryRange, string][]).map(([value, label]) =>
           <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: model.range === value }} onPress={() => model.setRange(value)} style={[styles.range, model.range === value && styles.selectedRange]}><Text style={styles.rangeText}>{label}</Text></Pressable>)}</View>
         {model.history.busy ? <Feedback busy /> : model.history.error ? <Feedback title="Unable to load packet history" message={model.history.error} onRetry={model.refresh} /> : <>
@@ -144,7 +150,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
             <Text style={styles.pageCount}>Page {model.history.data?.currentPage || model.page} of {Math.max(1, model.history.data?.totalPages || 1)}{'\n'}{model.history.data?.totalRecords || 0} records</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Next history page" disabled={model.page >= (model.history.data?.totalPages || 1)} onPress={() => model.setPage(model.page + 1)} style={[styles.pageButton, model.page >= (model.history.data?.totalPages || 1) && styles.disabled]}><Text style={styles.linkText}>Next</Text></Pressable>
           </View>
-          {model.history.data?.packets.length ? <View style={styles.stack}>{model.history.data.packets.map(packet => <PacketCard key={packet.id} packet={packet} device={device} />)}</View>
+          {model.history.data?.packets.length ? historyView === 'trends' ? <HistoryTrends packets={model.history.data.packets} device={device} /> : <View style={styles.stack}>{model.history.data.packets.map(packet => <PacketCard key={packet.id} packet={packet} device={device} />)}</View>
             : <Feedback title="No packets in this period" message="Choose a wider time range or refresh to check for new packets." />}
         </>}
       </> : <>
@@ -153,6 +159,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
           : model.logs.data?.length ? <LogsList logs={model.logs.data} /> : <Feedback title="No activity logs" message="No activity log entries were returned for this device. Received packets are available in History." />}
       </>}
     </ScrollView>
+    {downlinkOpen && <DownlinkSheet key={device.id} device={device} onClose={() => setDownlinkOpen(false)} onSent={model.refresh} />}
   </View></SafeAreaView>;
 }
 const styles = StyleSheet.create({
