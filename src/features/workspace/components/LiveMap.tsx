@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, PanResponder, Platform, Pressable, StyleSheet, Text, View, type GestureResponderEvent, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
-import { fitMap, MAX_ZOOM, MIN_ZOOM, projectPoint, screenPoint, TILE_SIZE, unprojectPoint } from '../services/mapGeometry';
+import { fitMap, gestureMap, type MapTouch, type MapViewState, MAX_ZOOM, MIN_ZOOM, projectPoint, screenPoint, TILE_SIZE, unprojectPoint } from '../services/mapGeometry';
 import type { Coordinates } from '../types';
 import { WorkspacePicker } from './WorkspaceUI';
 import { MapTile } from './MapTile';
@@ -21,29 +21,53 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
   const positionsKey = valid.map(device => device.id + ':' + device.coordinates!.lat + ',' + device.coordinates!.lng).join('|');
   const viewportKey = positionsKey + ':' + size.width + ':' + size.height;
   const latest = useRef(view); latest.current = view;
-  const panStart = useRef({ x: 0, y: 0 });
+  const mapRef = useRef<View>(null);
+  const mapOrigin = useRef({ x: 0, y: 0 });
+  const latestSize = useRef(size); latestSize.current = size;
+  const gestureStart = useRef<{ view: MapViewState; touches: MapTouch[] } | null>(null);
+  function measureOrigin() {
+    mapRef.current?.measureInWindow((x, y) => {
+      mapOrigin.current = { x: x + (Platform.OS === 'web' ? window.scrollX : 0), y: y + (Platform.OS === 'web' ? window.scrollY : 0) };
+    });
+  }
   useEffect(() => {
     if (size.width && size.height && valid.length) setView(fitMap(valid.map(device => device.coordinates!), size.width, size.height));
     setFittedKey(viewportKey);
     setTileError(false);
   }, [positionsKey, size.width, size.height]);
-  const pan = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5,
-    onPanResponderGrant: () => { panStart.current = projectPoint(latest.current.center, latest.current.zoom); },
-    onPanResponderMove: (_, gesture) => {
-      const zoom = latest.current.zoom;
-      setView({ zoom, center: unprojectPoint({ x: panStart.current.x - gesture.dx, y: panStart.current.y - gesture.dy }, zoom) });
-    },
-  }), []);
-  const center = projectPoint(view.center, view.zoom), count = 2 ** view.zoom;
+  const pan = useMemo(() => {
+    const touches = (event: GestureResponderEvent): MapTouch[] => event.nativeEvent.touches.slice(0, 2).map(touch => ({ x: touch.pageX - mapOrigin.current.x, y: touch.pageY - mapOrigin.current.y }));
+    const begin = (event: GestureResponderEvent) => { gestureStart.current = { view: latest.current, touches: touches(event) }; };
+    const wantsGesture = (event: GestureResponderEvent, gesture: { dx: number; dy: number }) => event.nativeEvent.touches.length > 1 || Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5;
+    return PanResponder.create({
+      onStartShouldSetPanResponderCapture: event => { measureOrigin(); return event.nativeEvent.touches.length > 1; },
+      onMoveShouldSetPanResponder: wantsGesture,
+      onMoveShouldSetPanResponderCapture: wantsGesture,
+      onPanResponderGrant: begin,
+      onPanResponderStart: begin,
+      onPanResponderEnd: begin,
+      onPanResponderMove: event => {
+        const current = touches(event), start = gestureStart.current;
+        if (!start || start.touches.length !== current.length) { begin(event); return; }
+        const next = gestureMap(start.view, start.touches, current, latestSize.current.width, latestSize.current.height);
+        latest.current = next;
+        setView(next);
+      },
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: () => { gestureStart.current = null; },
+      onPanResponderTerminate: () => { gestureStart.current = null; },
+    });
+  }, []);
+  const tileZoom = Math.floor(view.zoom), tileSize = TILE_SIZE * 2 ** (view.zoom - tileZoom);
+  const center = projectPoint(view.center, view.zoom), count = 2 ** tileZoom;
   const left = center.x - size.width / 2, top = center.y - size.height / 2;
   const tiles: { key: string; x: number; y: number; url: string }[] = [];
-  for (let row = Math.floor(top / TILE_SIZE); row <= Math.floor((top + size.height) / TILE_SIZE); row++) {
+  for (let row = Math.floor(top / tileSize); row <= Math.floor((top + size.height) / tileSize); row++) {
     if (row < 0 || row >= count) continue;
-    for (let column = Math.floor(left / TILE_SIZE); column <= Math.floor((left + size.width) / TILE_SIZE); column++) {
+    for (let column = Math.floor(left / tileSize); column <= Math.floor((left + size.width) / tileSize); column++) {
       const wrapped = ((column % count) + count) % count;
-      tiles.push({ key: view.zoom + ':' + column + ':' + row, x: column * TILE_SIZE - left, y: row * TILE_SIZE - top,
-        url: tileTemplate.replace('{z}', String(view.zoom)).replace('{x}', String(wrapped)).replace('{y}', String(row)) });
+      tiles.push({ key: tileZoom + ':' + column + ':' + row, x: column * tileSize - left, y: row * tileSize - top,
+        url: tileTemplate.replace('{z}', String(tileZoom)).replace('{x}', String(wrapped)).replace('{y}', String(row)) });
     }
   }
   const groups = new Map<string, { x: number; y: number; devices: Device[] }>();
@@ -55,9 +79,9 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
     if (group) group.devices.push(device); else groups.set(key, { ...point, devices: [device] });
   }
   function zoomBy(delta: number) { setView(value => ({ ...value, zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value.zoom + delta)) })); setTileError(false); }
-  return <View style={styles.map} onLayout={event => setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })} {...pan.panHandlers}>
+  return <View ref={mapRef} style={[styles.map, Platform.OS === 'web' && ({ touchAction: 'none' } as ViewStyle)]} onLayout={event => { setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height }); measureOrigin(); }} {...pan.panHandlers}>
     {size.width > 0 && size.height > 0 && valid.length > 0 && fittedKey === viewportKey && tiles.map(tile =>
-      <MapTile key={tile.key + ':' + tileRevision} uri={tile.url} x={tile.x} y={tile.y} size={TILE_SIZE} onError={() => setTileError(true)} />)}
+      <MapTile key={tile.key + ':' + tileRevision} uri={tile.url} x={tile.x} y={tile.y} size={tileSize + 0.5} onError={() => setTileError(true)} />)}
     <Pressable accessibilityRole="button" accessibilityLabel="Close map selection" accessible={!!selectedId} focusable={!!selectedId}
       onPress={onBackground} style={StyleSheet.absoluteFill} />
     {[...groups.entries()].map(([key, group]) => <Pressable key={key} accessibilityRole="button"

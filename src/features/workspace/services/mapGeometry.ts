@@ -29,3 +29,20 @@ export function screenPoint(point: Coordinates, center: Coordinates, zoom: numbe
   if (dx < -size / 2) dx += size;
   return { x: width / 2 + dx, y: height / 2 + target.y - origin.y };
 }
+
+export interface MapViewState { center: Coordinates; zoom: number; }
+export interface MapTouch { x: number; y: number; }
+// Keep the world point beneath the initial midpoint under the moving fingers.
+export function gestureMap(start: MapViewState, initial: MapTouch[], current: MapTouch[], width: number, height: number): MapViewState {
+  if (!initial.length || initial.length !== current.length) return start;
+  const midpoint = (points: MapTouch[]) => points.length > 1 ? { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 } : points[0];
+  const from = midpoint(initial), to = midpoint(current);
+  const distance = (points: MapTouch[]) => Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
+  const scale = initial.length > 1 && distance(initial) > 0 ? Math.max(0.001, distance(current)) / distance(initial) : 1;
+  const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, start.zoom + Math.log2(scale)));
+  const ratio = 2 ** (zoom - start.zoom), origin = projectPoint(start.center, start.zoom);
+  return { zoom, center: unprojectPoint({
+    x: (origin.x + from.x - width / 2) * ratio - to.x + width / 2,
+    y: (origin.y + from.y - height / 2) * ratio - to.y + height / 2,
+  }, zoom) };
+}
