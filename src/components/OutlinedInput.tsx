@@ -29,30 +29,34 @@ export function OutlinedInput({
   const [focused, setFocused] = React.useState(false);
 
   return (
-    <View
-      style={[
-        styles.box,
-        focused && { borderColor: theme.colors.primary },
-        invalid && { borderColor: theme.colors.error },
-      ]}
-    >
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        {...props}
-        ref={inputRef}
-        accessibilityLabel={label}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        style={[styles.input, style, Platform.OS === "web" && styles.webInput]}
-        placeholderTextColor={theme.colors.muted}
-      />
-      {trailing}
+    <View>
+      <View
+        style={[
+          styles.box,
+          focused && { borderColor: theme.colors.primary },
+          invalid && { borderColor: theme.colors.error },
+        ]}
+      >
+        <TextInput
+          {...props}
+          ref={inputRef}
+          accessibilityLabel={label}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          style={[styles.input, style, Platform.OS === "web" && styles.webInput]}
+          placeholderTextColor={theme.colors.muted}
+        />
+        {trailing}
+      </View>
+      <Text pointerEvents="none" style={styles.label}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -70,12 +74,16 @@ const styles = StyleSheet.create({
   },
   label: {
     position: "absolute",
-    top: -11,
-    left: 12,
+    // Keep the label outside the bordered native view and above the input.
+    zIndex: 1,
+    top: -10,
+    left: 14,
     backgroundColor: theme.colors.background,
     paddingHorizontal: 4,
     color: "#666666",
     fontSize: 14,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   input: {
     flex: 1,

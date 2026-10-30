@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,12 +25,21 @@ export function SignInScreen({
   onSignedIn: (user: AuthUser) => void;
   onPreview: () => void;
 }) {
-  const { isTablet, isShort } = useResponsiveLayout();
+  const { isTablet, height, fontScale } = useResponsiveLayout();
+  const [availableHeight, setAvailableHeight] = useState(height);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Measure the space left by the safe area and keyboard, reserving room for errors.
+  const layoutHeight = availableHeight - (error ? 60 * fontScale : 0);
+  const compact = layoutHeight / fontScale < 700;
+  const tight = layoutHeight / fontScale < 440;
+  const showBrand = isTablet || !tight;
+  const illustrationSize = isTablet
+    ? Math.min(260, Math.max(0, layoutHeight - 220 * fontScale))
+    : Math.min(180, Math.max(0, layoutHeight - 600 * fontScale));
   const submitting = useRef(false);
   const passwordRef = useRef<TextInput>(null);
   async function submit() {
@@ -59,32 +67,40 @@ export function SignInScreen({
         style={styles.safe}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          style={{ flex: 1, minHeight: 0 }}
-          contentContainerStyle={[styles.content, isTablet && styles.tabletContent, isShort && { paddingVertical: 20 }]}
-          keyboardShouldPersistTaps='handled'
-          automaticallyAdjustKeyboardInsets
+        <View
+          onLayout={(event) => setAvailableHeight(event.nativeEvent.layout.height)}
+          style={[
+            styles.content,
+            isTablet && styles.tabletContent,
+            compact && styles.compactContent,
+          ]}
         >
-          <View style={[styles.intro, isTablet && styles.tabletColumn]}>
-            <View style={styles.brand}>
-              <Image
-                source={require("../../../../assets/images/ginjer-logo.png")}
-                style={styles.logo}
-                resizeMode='contain'
-                accessibilityLabel='Ginjer, powered by SenRa'
-              />
-              <Text style={styles.tagline}>
-                A new way to Sense, Control and Automate
-              </Text>
+          {showBrand && (
+            <View style={[styles.intro, isTablet && styles.tabletColumn]}>
+              <View style={styles.brand}>
+                <Image
+                  source={require("../../../../assets/images/ginjer-logo.png")}
+                  style={[styles.logo, compact && styles.compactLogo]}
+                  resizeMode='contain'
+                  accessibilityLabel='Ginjer, powered by SenRa'
+                />
+                {!compact && (
+                  <Text style={styles.tagline}>
+                    A new way to Sense, Control and Automate
+                  </Text>
+                )}
+              </View>
+              {illustrationSize >= 80 && (
+                <Image
+                  source={require("../../../../assets/images/sign-in-illustration.png")}
+                  style={[styles.illustration, { width: illustrationSize }]}
+                  resizeMode='contain'
+                  accessible={false}
+                />
+              )}
             </View>
-            <Image
-              source={require("../../../../assets/images/sign-in-illustration.png")}
-              style={[styles.illustration, isTablet && { width: 260 }, isShort && { width: 120 }]}
-              resizeMode='contain'
-              accessible={false}
-            />
-          </View>
-          <View style={[styles.form, isTablet && styles.tabletColumn]}>
+          )}
+          <View style={[styles.form, isTablet && styles.tabletColumn, compact && styles.compactForm]}>
             <OutlinedInput
               label='Email ID*'
               value={email}
@@ -146,6 +162,7 @@ export function SignInScreen({
               onPress={submit}
               style={({ pressed }) => [
                 styles.button,
+                compact && styles.compactButton,
                 { opacity: pressed || busy ? 0.7 : 1 },
               ]}
             >
@@ -163,9 +180,9 @@ export function SignInScreen({
             >
               <Text style={styles.previewText}>Preview sample screens</Text>
             </Pressable>
-            <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>
+            {!compact && <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>}
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -173,7 +190,8 @@ export function SignInScreen({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   content: {
-    flexGrow: 1,
+    flex: 1,
+    minHeight: 0,
     width: "100%",
     maxWidth: 1120,
     alignSelf: "center",
@@ -184,10 +202,12 @@ const styles = StyleSheet.create({
     gap: 28,
   },
   tabletContent: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingHorizontal: 32 },
+  compactContent: { paddingVertical: 16, gap: 24 },
   intro: { alignItems: 'center', width: '100%', maxWidth: 440, alignSelf: 'center' },
   tabletColumn: { flex: 1, minWidth: 0 },
   brand: { alignItems: "center", width: '100%' },
   logo: { width: 190, maxWidth: '100%', height: 78 },
+  compactLogo: { width: 150, height: 60 },
   tagline: {
     color: theme.colors.muted,
     fontSize: 13,
@@ -201,6 +221,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   form: { gap: 22, width: '100%', maxWidth: 440, alignSelf: 'center' },
+  compactForm: { gap: 16 },
   eye: {
     minWidth: 44,
     minHeight: 44,
@@ -217,6 +238,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   buttonText: { color: "white", fontSize: 20, fontWeight: "600" },
+  compactButton: { marginTop: 4 },
   previewButton: {
     alignItems: "center",
     minHeight: 44,
@@ -231,5 +253,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 4,
   },
-  link: { color: "#78A51A", fontWeight: "600" },
 });
