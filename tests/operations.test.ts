@@ -4,7 +4,7 @@ import type { ApiRequest } from '../src/services/graphqlTransport.ts';
 import { ApiError, createGraphqlTransport } from '../src/services/graphqlTransport.ts';
 import { normalizeDevices } from '../src/features/workspace/services/normalizers.ts';
 import { createOperationsApi, normalizeNotifications, normalizeRules, notificationDevice } from '../src/features/workspace/services/operations.ts';
-import { createDownlinkApi, downlinkAction, normalizeDownlinks, networkDownlinkKeys, controllerValue, parseCommandValue } from '../src/features/workspace/services/downlinks.ts';
+import { createDownlinkApi, downlinkAction, normalizeDownlinks, normalizeDownlinkResult, networkDownlinkKeys, controllerValue, parseCommandValue } from '../src/features/workspace/services/downlinks.ts';
 import { deviceHealth, healthSummary, packetTrends, sortDevices } from '../src/features/workspace/services/deviceInsights.ts';
 import { normalizePacket } from '../src/features/workspace/services/deviceInspection.ts';
 import { createAccountApi, profileInput, registrationInput } from '../src/features/auth/services/accountApi.ts';
@@ -88,7 +88,7 @@ test('send guard rejects archived, preview, foreign options and unsupported inte
   for (const invalid of [{ ...device, deleted: true }, { ...device, source: 'demo' as const }, { ...device, organizationId: '' }, { ...device, id: 'other' }]) assert.throws(() => downlinkAction(invalid, draft, options));
   assert.throws(() => downlinkAction(device, { ...draft, interfaceId: 'other' }, options));
   for (const port of [0, 224, -1, 2.5, NaN]) assert.throws(() => downlinkAction(device, { ...draft, port }, options));
-  assert.deepEqual(downlinkAction(device, draft, options), { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: {} });
+  assert.deepEqual(downlinkAction(device, draft, options), { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: {}, timeout: 1000 });
 });
 test('downlink form discovery loads only controllers and key names without sending commands', async () => {
   const queries: string[] = [];
@@ -107,7 +107,7 @@ test('send uses the documented query and exact saved command fields without a re
   const saved = options.commands[0];
   const result = await api.send(device, { interfaceId: saved.interfaceId, value: saved.value, port: saved.port, deviceClass: saved.deviceClass, networkKeyId: saved.networkKeyId }, options);
   assert.equal(result.message, 'Queued'); assert.equal(calls, 1);
-  assert.deepEqual(captured, { action: { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: { valve: 1, open: false, duration: 0 }, port: 10, class: 'CLASS_A', networkKeyId: 'key-id' } });
+  assert.deepEqual(captured, { action: { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: { valve: 1, open: false, duration: 0 }, timeout: 1000, port: 10, class: 'CLASS_A', networkKeyId: 'key-id' } });
   const failure = createDownlinkApi((async () => { calls++; throw new Error('Network'); }) as ApiRequest);
   await assert.rejects(failure.send(device, { interfaceId: 'command', value: {} }, options)); assert.equal(calls, 2);
 });
@@ -163,7 +163,7 @@ test('registration and profile mutations use separate transports and reject mism
 test('website controller form sends plain text exactly, with selected port, class and key', () => {
   const formOptions = { ...options, networkKeys: [{ id: 'key-id', name: 'NetsyKey' }] };
   const draft = { interfaceId: 'command', value: '001100', port: 1, deviceClass: 'CLASS_C' as const, networkKeyId: 'key-id' };
-  assert.deepEqual(downlinkAction(device, draft, formOptions), { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: '001100', port: 1, class: 'CLASS_C', networkKeyId: 'key-id' });
+  assert.deepEqual(downlinkAction(device, draft, formOptions), { organisationId: 'org', deviceId: 'device', downlinkInterfaceId: 'command', value: '001100', timeout: 1000, port: 1, class: 'CLASS_C', networkKeyId: 'key-id' });
   assert.equal(controllerValue('0'), '0'); assert.equal(controllerValue('Off'), 'Off');
   assert.throws(() => controllerValue('  ')); assert.throws(() => controllerValue('x'.repeat(32769)));
   assert.throws(() => downlinkAction(device, { ...draft, networkKeyId: 'foreign-key' }, formOptions));
@@ -175,4 +175,23 @@ test('downlink key choices stay within the device network and organization and o
   assert.deepEqual(networkDownlinkKeys(currentDevice, [network]), { networkKeys: [{ id: 'first', name: 'First' }, { id: 'second', name: 'Second' }], defaultNetworkKeyId: 'second' });
   assert.equal(networkDownlinkKeys({ ...currentDevice, networkKeyId: undefined }, [network]).defaultNetworkKeyId, 'first');
   for (const invalid of [{ ...network, _id: 'other' }, { ...network, organisationId: 'other' }, { ...network, deleted: true }]) assert.equal(networkDownlinkKeys(currentDevice, [invalid]).networkKeys.length, 0);
+});
+
+test('nested network failures and parsing errors never look like a successful downlink', () => {
+  for (const status of [400, 401, 403, 404, 500, '502']) {
+    assert.throws(() => normalizeDownlinkResult({ type: 'DOWNLINK', message: JSON.stringify({ status, statusText: 'Network rejected command' }) }), /Downlink rejected/);
+  }
+  assert.throws(() => normalizeDownlinkResult({ type: 'PARSING', message: 'Invalid controller value' }), /Invalid controller value/);
+  for (const status of [200, 201, 202, '202']) {
+    const response = normalizeDownlinkResult({ type: 'DOWNLINK', message: JSON.stringify({ status, statusText: 'Accepted' }) });
+    assert.equal(response.outcome, 'accepted'); assert.equal(response.message, 'Accepted');
+  }
+  assert.equal(normalizeDownlinkResult({ type: 'DOWNLINK', message: 'Queued' }).outcome, 'unknown');
+  assert.equal(normalizeDownlinkResult({ type: 'DOWNLINK', message: '{}' }).outcome, 'unknown');
+});
+test('a stale configured network key is not silently replaced, and changed networks require reopening', () => {
+  const current = { ...device, networkId: 'network', networkKeyId: 'removed' };
+  const networks = [{ _id: 'network', organisationId: 'org', configuration: { httpOptions: { networkKeys: [{ _id: 'different-key', name: 'Other key' }] } } }];
+  assert.equal(networkDownlinkKeys(current, networks).defaultNetworkKeyId, undefined);
+  assert.throws(() => downlinkAction({ ...device, networkId: 'changed' }, { interfaceId: 'command', value: 'red' }, options), /network has changed/);
 });

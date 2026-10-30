@@ -3,9 +3,9 @@ import type { Device } from '../../devices/types';
 
 export interface DownlinkInterface { id: string; name: string; }
 export interface SavedCommand { id: string; name: string; interfaceId: string; value: Record<string, unknown>; port: number; deviceClass: 'CLASS_A' | 'CLASS_B' | 'CLASS_C'; networkKeyId: string; }
-export interface DownlinkOptions { deviceId: string; organisationId: string; hardwareId: string; interfaces: DownlinkInterface[]; networkKeys?: { id: string; name: string }[]; defaultNetworkKeyId?: string; commands: SavedCommand[]; warnings: string[]; }
+export interface DownlinkOptions { deviceId: string; organisationId: string; hardwareId: string; networkId?: string; interfaces: DownlinkInterface[]; networkKeys?: { id: string; name: string }[]; defaultNetworkKeyId?: string; commands: SavedCommand[]; warnings: string[]; }
 export interface DownlinkDraft { interfaceId: string; value: string | Record<string, unknown>; port?: number; deviceClass?: 'CLASS_A' | 'CLASS_B' | 'CLASS_C'; networkKeyId?: string; }
-export interface DownlinkResult { type: string; message: string; timestamp?: string; }
+export interface DownlinkResult { type: string; message: string; timestamp?: string; outcome?: 'accepted' | 'unknown'; }
 export interface DownlinkApi {
   options(device: Device, signal?: AbortSignal): Promise<DownlinkOptions>;
   send(device: Device, draft: DownlinkDraft, options: DownlinkOptions): Promise<DownlinkResult>;
@@ -31,7 +31,7 @@ export function networkDownlinkKeys(device: Device, networks: unknown) {
   const network = arr(networks).map(obj).find(row => row._id === device.networkId && (!row.organisationId || row.organisationId === device.organizationId) && row.deleted !== true);
   const networkKeys = arr(obj(obj(network?.configuration).httpOptions).networkKeys).map(obj)
     .filter(row => !!str(row._id)).map(row => ({ id: str(row._id), name: str(row.name) || 'Downlink key' }));
-  return { networkKeys, defaultNetworkKeyId: networkKeys.find(key => key.id === device.networkKeyId)?.id || networkKeys[0]?.id };
+  return { networkKeys, defaultNetworkKeyId: device.networkKeyId ? networkKeys.find(key => key.id === device.networkKeyId)?.id : networkKeys[0]?.id };
 }
 export function normalizeDownlinks(device: Device, hardware: unknown, modules: unknown, favorites: unknown): DownlinkOptions {
   const match = arr(hardware).map(obj).find(row => row._id === device.hardwareId && (!row.organisationId || row.organisationId === device.organizationId) && row.deleted !== true);
@@ -50,18 +50,35 @@ export function normalizeDownlinks(device: Device, hardware: unknown, modules: u
       commands.push({ id: str(row._id) || 'saved-' + commands.length, name: str(row.name) || 'Saved command', interfaceId: str(row.downlinkInterfaceId), value, port, deviceClass: deviceClass as SavedCommand['deviceClass'], networkKeyId: str(row.networkKeyId) });
     } catch { invalid++; }
   }
-  return { deviceId: device.id, organisationId: device.organizationId || '', hardwareId: device.hardwareId, interfaces, commands, warnings: invalid ? [invalid + ' saved command(s) have an invalid payload or network settings. Update them in the web console.'] : [] };
+  return { deviceId: device.id, organisationId: device.organizationId || '', hardwareId: device.hardwareId, networkId: device.networkId, interfaces, commands, warnings: invalid ? [invalid + ' saved command(s) have an invalid payload or network settings. Update them in the web console.'] : [] };
 }
 export function downlinkAction(device: Device, draft: DownlinkDraft, options: DownlinkOptions) {
   if (device.source !== 'live' || device.deleted || !device.id || !device.organizationId || !device.projectId) throw new Error('Select a current device before sending a command.');
   if (options.deviceId !== device.id || options.organisationId !== device.organizationId || options.hardwareId !== device.hardwareId) throw new Error('Command options belong to a different device. Reopen the command panel.');
+  if (options.networkId !== device.networkId) throw new Error('The device network has changed. Reopen the command panel.');
   if (!options.interfaces.some(item => item.id === draft.interfaceId)) throw new Error('Choose an interface supported by this hardware.');
   const value = typeof draft.value === 'string' ? controllerValue(draft.value) : parseCommandValue(JSON.stringify(draft.value));
   if (options.networkKeys && (!draft.networkKeyId || !options.networkKeys.some(key => key.id === draft.networkKeyId))) throw new Error('Choose a downlink key for this device network.');
   if (draft.port !== undefined && (!Number.isInteger(draft.port) || draft.port < 1 || draft.port > 223)) throw new Error('Port must be a whole number from 1 to 223.');
   if (draft.deviceClass !== undefined && !['CLASS_A', 'CLASS_B', 'CLASS_C'].includes(draft.deviceClass)) throw new Error('Choose a valid device class.');
-  return { organisationId: device.organizationId, deviceId: device.id, downlinkInterfaceId: draft.interfaceId, value,
+  return { organisationId: device.organizationId, deviceId: device.id, downlinkInterfaceId: draft.interfaceId, value, timeout: 1000,
     ...(draft.port !== undefined ? { port: draft.port } : {}), ...(draft.deviceClass ? { class: draft.deviceClass } : {}), ...(draft.networkKeyId ? { networkKeyId: draft.networkKeyId } : {}) };
+}
+// GraphQL success does not imply that the network accepted the downlink.
+// Match the web console's nested HTTP status handling; never claim delivery.
+export function normalizeDownlinkResult(raw: unknown): DownlinkResult {
+  const result = obj(raw), type = str(result.type), message = str(result.message);
+  if (!type || !message) throw new Error('The server did not confirm the command result. Check device logs before trying again.');
+  let payload: Record<string, unknown> = {};
+  let structured = false;
+  try { payload = obj(JSON.parse(message)); structured = true; } catch { /* Some network responses are plain text. */ }
+  const status = typeof payload.status === 'number' || typeof payload.status === 'string' ? Number(payload.status) : undefined;
+  const reason = str(payload.statusText) || str(payload.message) || (structured ? 'The server returned no delivery details.' : message);
+  if (/parsing|error|fail|reject/i.test(type) || (status !== undefined && ![200, 201, 202].includes(status))) {
+    throw new Error('Downlink rejected' + (status !== undefined && Number.isFinite(status) ? ' (' + status + ')' : '') + ': ' + reason);
+  }
+  return { type, message: reason, timestamp: str(result.timestamp) || undefined,
+    outcome: status !== undefined && [200, 201, 202].includes(status) ? 'accepted' : 'unknown' };
 }
 export const DOWNLINK_HARDWARE_QUERY = 'query DownlinkHardware($params: ParamInput!) { hardwareList(params: $params) { _id organisationId deleted loRaWANConfiguration { controllers { moduleId } } } }';
 export const DOWNLINK_MODULES_QUERY = 'query DownlinkModules($params: ParamInput!) { modules(params: $params) { _id label moduleType organisationId } }';
@@ -86,9 +103,7 @@ export function createDownlinkApi(request: ApiRequest): DownlinkApi {
     },
     async send(device, draft, options) {
       const data = await request<{ sendDownlink: unknown }>(SEND_DOWNLINK_QUERY, { action: downlinkAction(device, draft, options) });
-      const result = obj(data.sendDownlink);
-      if (!str(result.type) || !str(result.message)) throw new Error('The server did not confirm the command result. Check device logs before trying again.');
-      return { type: str(result.type), message: str(result.message), timestamp: str(result.timestamp) || undefined };
+      return normalizeDownlinkResult(data.sendDownlink);
     },
   };
 }

@@ -34,6 +34,6 @@
 - Verify password-based sign-in with working credentials, native cold-start restoration, and expired-session recovery on devices.
 - Exercise slow/offline requests, long readings, large projects, and organization switching.
 - Select/configure the deployment map tile service.
-- Exercise sign-up, profile saves, and one approved downlink on a designated test device. Their requests are covered with mock transports and verified schema definitions; no production mutations or device commands were performed during implementation.
+- Exercise sign-up, profile saves, and one approved downlink on a designated test device. Their requests are covered with mock transports and verified schema definitions; no production mutations or production device commands were performed. Development Busy Light testing is documented below.
 
-The checked-in API documents contain sanitized operation definitions only. Collection tokens and account-specific values remain outside source control. No downlinks have been sent during development.
+The checked-in API documents contain sanitized operation definitions only. Collection tokens and account-specific values remain outside source control. Controlled development Busy Light commands have been tested; the API accepted them, but physical delivery is unresolved. See the investigation in workspace-features-api.md.

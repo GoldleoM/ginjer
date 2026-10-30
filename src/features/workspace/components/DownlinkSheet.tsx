@@ -22,15 +22,6 @@ function SelectField({ label, value, items, onChange, disabled }: { label: strin
     </Pressable>)}</View>}
   </View>;
 }
-function responseMessage(result: DownlinkResult) {
-  try {
-    const data = JSON.parse(result.message);
-    if (typeof data === 'string') return data;
-    if (typeof data?.statusText === 'string') return data.statusText;
-    if (typeof data?.message === 'string') return data.message;
-    return 'The server returned a response. Check device logs for the command status.';
-  } catch { return result.message; }
-}
 export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { device: Device; onClose: () => void; onSent?: () => void; api?: DownlinkApi }) {
   const { isTablet } = useResponsiveLayout();
   const [options, setOptions] = useState<DownlinkOptions>();
@@ -82,7 +73,7 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
         <View style={styles.header}><Text accessibilityRole="header" style={styles.title}>Send Downlink to {device.name}</Text><ActionIcon icon="close" label="Close downlink panel" onPress={close} disabled={sending} /></View>
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flexShrink: 1 }} contentContainerStyle={styles.content}>
           {device.deleted ? <Feedback title="Device archived" message="Commands are available for current devices." /> : loading ? <Feedback busy /> : loadError ? <Feedback title="Unable to load controllers" message={loadError} onRetry={() => setRevision(current => current + 1)} /> : !options?.interfaces.length ? <Feedback title="No downlink controllers" message="No supported controllers are available for this device." /> : <>
-            <SelectField label="Downlink Controller" items={options.interfaces} value={interfaceId} onChange={setInterfaceId} disabled={attempted} />
+            <SelectField label="Downlink Controller" items={options.interfaces} value={interfaceId} onChange={id => { setInterfaceId(id); setValue(''); }} disabled={attempted} />
             <View style={styles.field}><Text style={styles.label}>Controller Value</Text><TextInput accessibilityLabel="Controller Value" autoCapitalize="none" autoCorrect={false} editable={!attempted} value={value} onChangeText={setValue} style={styles.input} /></View>
             <View style={styles.row}>
               <View style={styles.column}><View style={styles.field}><Text style={styles.label}>Downlink Port</Text><TextInput accessibilityLabel="Downlink Port" keyboardType="number-pad" editable={!attempted} value={port} onChangeText={setPort} style={styles.input} /></View></View>
@@ -95,7 +86,11 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
             {!options.networkKeys?.length && <Text style={styles.error}>No downlink key is available for this device's network.</Text>}
           </>}
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          {!!result && <Text accessibilityLiveRegion="polite" style={styles.response}>{responseMessage(result)}</Text>}
+          {!!result && <View accessibilityLiveRegion="polite" style={[styles.response, result.outcome !== 'accepted' && { backgroundColor: '#F3F4F6' }]}>
+            <Text style={styles.responseTitle}>{result.outcome === 'accepted' ? 'Command accepted by network' : 'Delivery not confirmed'}</Text>
+            <Text style={styles.responseText}>{result.message}</Text>
+            <Text style={styles.responseText}>Device readings update when the backend reports the new state.</Text>
+          </View>}
         </ScrollView>
         <View style={styles.footer}><Pressable accessibilityRole="button" disabled={sending} onPress={close} style={styles.cancel}><Text style={styles.link}>{attempted ? 'Close' : 'Cancel'}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={'Send command to ' + device.name} disabled={!!disabled} accessibilityState={{ disabled: !!disabled, busy: sending }} onPress={send} style={[styles.send, disabled && { opacity: 0.45 }]}>{sending ? <ActivityIndicator color="white" /> : <Text style={styles.sendText}>Send</Text>}</Pressable></View>
@@ -113,7 +108,7 @@ const styles = StyleSheet.create({
   dropdown: { borderTopWidth: 1, borderTopColor: '#EEEEEE' }, option: { minHeight: 44, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }, selected: { backgroundColor: '#F3F7EA' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, column: { flex: 1, minWidth: 120 },
   keyRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }, keyText: { color: '#777777', fontSize: 12, flexShrink: 1 }, changeKey: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
-  link: { color: '#739C25', fontSize: 14, fontWeight: '500' }, error: { color: '#B42318', lineHeight: 22, fontSize: 14 }, response: { color: '#303030', lineHeight: 22, padding: 12, backgroundColor: '#F3F7EA', borderRadius: 8 },
+  link: { color: '#739C25', fontSize: 14, fontWeight: '500' }, error: { color: '#B42318', lineHeight: 22, fontSize: 14 }, responseTitle: { color: '#303030', fontWeight: '600', fontSize: 14, lineHeight: 22 }, responseText: { color: '#62685D', fontSize: 13, lineHeight: 20 }, response: { gap: 4, padding: 12, backgroundColor: '#F3F7EA', borderRadius: 8 },
   footer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, padding: 20 }, cancel: { minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#AFC879', borderRadius: 12 },
   send: { minWidth: 94, minHeight: 48, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#83AF23', borderRadius: 12 }, sendText: { color: 'white', fontWeight: '600' },
 });

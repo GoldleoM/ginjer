@@ -28,7 +28,7 @@ query SendDownlink($action: SendDownlinkInput!) {
 }
 ```
 
-The action includes `organisationId`, `deviceId`, `downlinkInterfaceId`, plain-text `value`, `port`, `class`, and `networkKeyId`. Options must match the current device, organization, and hardware before sending. Archived/demo devices cannot send. There are no automatic retries. The sheet blocks duplicate submissions; ambiguous outcomes direct users to inspect logs. A response is not proof of physical delivery.
+The action includes `organisationId`, `deviceId`, `downlinkInterfaceId`, plain-text `value`, `port`, `class`, `networkKeyId`, and the official website timeout of `1000`. Options must match the current device, organization, and hardware before sending. Archived/demo devices cannot send. There are no automatic retries. The sheet blocks duplicate submissions; ambiguous outcomes direct users to inspect logs. Nested network statuses 200/201/202 are shown as accepted, while rejection and parsing responses are errors. Other responses remain unconfirmed. A response is not proof of physical delivery. The configured key is never silently replaced if it no longer exists.
 
 The UI matches the official website: controller dropdown, controller value text field, port, class, and key selector. It does not require JSON or execute controller source code. Saved-command selection is not shown.
 
@@ -47,3 +47,7 @@ The UI matches the official website: controller dropdown, controller value text 
 - Browser access was unavailable, so browser and physical-device interaction/visual QA remain pending.
 
 Health indicators use the existing last-heard timestamp and readings, not a backend health guarantee. History charts include only numeric outputs from the currently loaded page; booleans, missing values, invalid timestamps, and foreign-device packets are excluded. Charts explicitly label this scope.
+
+### Busy Light delivery investigation (2026-10-30)
+
+A user-observed development test submitted Off and restored Blue using the same API adapter as the app, port 1, Class C, and the configured network key. The backend accepted both requests (nested status 200), but the user reported no physical change. Delivery remains unverified; compare the exact working website device URL and input before further commands. No production API commands were sent.
