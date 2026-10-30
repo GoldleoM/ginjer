@@ -58,24 +58,29 @@ export function DetailRow({ label, value }: { label: string; value: unknown }) {
   return <View style={styles.detailRow}><Text style={styles.detailLabel}>{label}</Text><Text selectable style={styles.detailValue}>{String(value)}</Text></View>;
 }
 export interface PickerItem { id: string; name: string; subtitle?: string; disabled?: boolean; }
-export function WorkspacePicker({ title, items, selectedId, onSelect, onClose }: {
+export function WorkspacePicker({ title, items, selectedId, onSelect, onClose, busy = false, error, onRefresh, description }: {
   title: string; items: PickerItem[]; selectedId?: string; onSelect: (id: string) => void; onClose: () => void;
+  busy?: boolean; error?: string; onRefresh?: () => void; description?: string;
 }) {
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => items.filter(item => (item.name + ' ' + (item.subtitle ?? '')).toLowerCase().includes(query.trim().toLowerCase())), [items, query]);
   return <Modal visible transparent animationType="slide" onRequestClose={onClose}>
     <SafeAreaView style={styles.overlay} edges={['top', 'bottom', 'left', 'right']}><Pressable accessibilityRole="button" accessibilityLabel="Close selector" onPress={onClose} style={StyleSheet.absoluteFill} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} accessibilityViewIsModal style={[styles.dialog, { height: '75%', maxHeight: '100%' }]}>
-        <View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text><ActionIcon icon="close" label="Close selector" onPress={onClose} /></View>
+        <View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text>
+          {busy ? <ActivityIndicator color="#83AF23" accessibilityLabel={'Refreshing ' + title.toLowerCase()} /> : onRefresh && <ActionIcon icon="refresh" label={'Refresh ' + title.toLowerCase()} onPress={onRefresh} />}
+          <ActionIcon icon="close" label="Close selector" onPress={onClose} /></View>
+        {!!description && <Text style={[liveStyles.caption, { marginBottom: 12 }]}>{description}</Text>}
         <TextInput value={query} onChangeText={setQuery} accessibilityLabel={'Search ' + title} placeholder={'Search ' + title.toLowerCase()} autoCorrect={false}
           style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
         <FlatList data={filtered} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" style={{ minHeight: 0, flexShrink: 1 }}
+          ListHeaderComponent={error ? <Feedback title={'Unable to refresh ' + title.toLowerCase()} message={error} onRetry={onRefresh} /> : null}
           renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityState={{ selected: item.id === selectedId, disabled: !!item.disabled }}
             disabled={item.disabled} onPress={() => onSelect(item.id)} style={[styles.pickerRow, item.id === selectedId && { backgroundColor: '#F2F6E9' }, item.disabled && { opacity: 0.5 }]}>
             <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.pickerName}>{item.name}</Text>{!!item.subtitle && <Text style={styles.pickerSubtitle}>{item.subtitle}</Text>}</View>
             {item.id === selectedId && <MaterialCommunityIcons name="check" size={21} color="#83AF23" />}
           </Pressable>}
-          ListEmptyComponent={<Feedback title="No matches" message="Try another search." />} />
+          ListEmptyComponent={busy ? <Feedback busy /> : error ? null : <Feedback title={query ? 'No matches' : 'No ' + title.toLowerCase() + ' available'} message={query ? 'Try another search.' : onRefresh ? 'Refresh to check for updates.' : undefined} />} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   </Modal>;

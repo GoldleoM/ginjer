@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AppState, Platform } from 'react-native';
 import type { AuthUser } from '../auth/types';
 import type { Device } from '../devices/types';
 import type { Account, Module, ProjectOverview, WorkspaceApi } from './types';
@@ -18,6 +19,8 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [accountsRevision, setAccountsRevision] = useState(0);
+  const refreshAccounts = useCallback(() => setAccountsRevision(value => value + 1), []);
   const [updatedAt, setUpdatedAt] = useState<string>();
   const [modulesEnabled, setModulesEnabled] = useState(false);
   const [moduleData, setModuleData] = useState<{ scope: string; items: Module[] }>({ scope: '', items: [] });
@@ -27,6 +30,16 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
   const account = accounts.find(item => item.id === accountId && item.active && item.accepted);
   const project = account ? selectedProject(projects, accountId, projectId) : undefined;
   const scope = accountId + ':' + projectId;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') refreshAccounts(); });
+    // Switching back from the invitation website can focus an already visible web app.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.addEventListener('focus', refreshAccounts);
+    return () => {
+      subscription.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.removeEventListener('focus', refreshAccounts);
+    };
+  }, [refreshAccounts]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,7 +53,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
     }).catch(error => { if (!controller.signal.aborted) setAccountsError(message(error)); })
       .finally(() => { if (!controller.signal.aborted) setAccountsLoading(false); });
     return () => controller.abort();
-  }, [api, user.organisationId, user.defaultAccount, revision]);
+  }, [api, user.organisationId, user.defaultAccount, revision, accountsRevision]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,7 +114,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
   return {
     accounts, account, accountId, accountsLoading, accountsError, projects, project, projectId, projectsLoading, projectsError,
     devices: account && project && deviceData.scope === scope ? deviceData.items : [], devicesLoading, devicesError, updatedAt, scope,
-    selectAccount, selectProject, clearProject, refresh, loading: accountsLoading || projectsLoading || devicesLoading,
+    selectAccount, selectProject, clearProject, refresh, refreshAccounts, loading: accountsLoading || projectsLoading || devicesLoading,
     error: accountsError || projectsError || devicesError,
     modules: account && moduleData.scope === accountId ? moduleData.items : [], modulesLoading, modulesError,
     loadModules: () => setModulesEnabled(true), retryModules: () => setModuleRevision(value => value + 1),

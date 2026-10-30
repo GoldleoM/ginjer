@@ -20,8 +20,10 @@ import { useOperations } from '../features/workspace/useOperations';
 import { ConnectedAutomation, ConnectedNotifications, NotificationBanner } from '../features/workspace/screens/ConnectedOperations';
 import { ConnectedHealth } from '../features/workspace/screens/ConnectedHealth';
 import type { AccountIdentity } from '../features/auth/services/accountApi';
+import { API_URL } from '../config/env';
 
 const liveApi = createWorkspaceApi(authenticatedGraphql);
+const apiHost = (() => { try { return new URL(API_URL).hostname; } catch { return 'Configured API'; } })();
 type Tab = 'Projects' | 'Devices' | 'Locations' | 'Analytics' | 'Profile' | 'Notifications' | 'Automation' | 'Health';
 export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi }: { user: AuthUser; onExit: () => void; onUserUpdated: (identity: AccountIdentity) => void; api?: WorkspaceApi }) {
   const workspace = useWorkspace(api, user);
@@ -40,6 +42,10 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
   function openProject(id: string) {
     if (workspace.selectProject(id)) setTab('Devices');
   }
+  function openOrganizations() {
+    workspace.refreshAccounts();
+    setPicker('organizations');
+  }
   useEffect(() => { setDetail(null); setProjectInfo(false); setModuleInfo(null); setModulesOpen(false); }, [workspace.scope, workspace.account?.id]);
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -54,9 +60,9 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
 
   if (detail) return <DeviceDetailsScreen key={detail.id} device={workspace.devices.find(item => item.id === detail.id) ?? detail} onBack={() => setDetail(null)} onRefresh={workspace.refresh} refreshing={workspace.loading} error={workspace.devicesError} />;
   const body = activeTab === 'Projects'
-    ? <ProjectsScreen key={workspace.accountId} user={user} workspace={workspace} onOpen={openProject} onOrganizations={() => setPicker('organizations')} onProfile={() => setTab('Profile')} />
+    ? <ProjectsScreen key={workspace.accountId} user={user} workspace={workspace} onOpen={openProject} onOrganizations={openOrganizations} onProfile={() => setTab('Profile')} />
     : activeTab === 'Profile'
-      ? <ConnectedProfile user={user} workspace={workspace} onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onLogout={onExit} onUserUpdated={onUserUpdated} />
+      ? <ConnectedProfile user={user} workspace={workspace} onOrganizations={openOrganizations} onProjects={showProjects} onLogout={onExit} onUserUpdated={onUserUpdated} />
     : workspace.loading && !workspace.devices.length ? <Feedback busy />
       : workspace.error ? <Feedback title="Unable to load workspace" message={workspace.error} onRetry={workspace.refresh} />
         : !workspace.account ? <Feedback title="No active organizations" message="You do not have an active, accepted membership. Your account details are available in Profile." />
@@ -69,7 +75,7 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
                 : <ConnectedDevices key={workspace.scope} workspace={workspace} onSelect={setDetail} />;
   return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom', 'left', 'right']}><View style={liveStyles.shell}>
     {activeTab !== 'Projects' && <WorkspaceBar organization={workspace.account?.name} project={workspace.project?.name} busy={workspace.loading}
-      onOrganizations={() => setPicker('organizations')} onProjects={showProjects} onInfo={() => setProjectInfo(true)} onRefresh={() => { workspace.refresh(); operations.refresh(); }} />}
+      onOrganizations={openOrganizations} onProjects={showProjects} onInfo={() => setProjectInfo(true)} onRefresh={() => { workspace.refresh(); operations.refresh(); }} />}
     {!!workspace.project && activeTab !== 'Profile' && <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
         {(['Notifications', 'Automation', 'Health'] as const).map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: activeTab === item }} onPress={() => setTab(item)} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: activeTab === item ? '#83AF23' : '#DDDDDD', backgroundColor: activeTab === item ? '#F1F6E7' : 'white' }}>
@@ -83,6 +89,8 @@ export function ConnectedNavigator({ user, onExit, onUserUpdated, api = liveApi 
     <BottomTabs active={activeTab} onProjects={showProjects} projectSelected={!!workspace.project} onDevices={() => setTab('Devices')} onLocations={() => setTab('Locations')} onAnalytics={() => setTab('Analytics')} onProfile={() => setTab('Profile')} />
   </View>
     {picker === 'organizations' && <WorkspacePicker title="Organizations" selectedId={workspace.accountId}
+      busy={workspace.accountsLoading} error={workspace.accountsError} onRefresh={workspace.refreshAccounts}
+      description={"Connected to " + apiHost + ". Invitations must be accepted in this same environment."}
       items={workspace.accounts.map(account => ({ id: account.id, name: account.name, disabled: !account.active || !account.accepted,
         subtitle: [account.admin ? 'Administrator' : 'Member', account.active ? 'Active' : 'Inactive', account.accepted ? 'Accepted' : 'Invitation pending'].join(' · ') }))}
       onClose={() => setPicker(null)} onSelect={id => {
