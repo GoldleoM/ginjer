@@ -26,12 +26,15 @@ test('readings override definitions, retain zero/false and respect output catego
   assert.equal(groups.status.length, 1); assert.equal(groups.status[0].value, '0'); assert.equal(groups.configuration[0].value, 'false');
   assert.ok(!Object.values(groups).flat().some(field => field.id === 'hidden'));
 });
-test('device list prioritizes the configured main output and includes attributes in compact mode', () => {
-  const reading = { title: 'Reading', value: 'false', label: '', icon: 'chart-line' as const, tone: 'neutral' as const, summary: 'false' };
+test('device list shows only the configured main output, preserving its value and status color', () => {
+  const reading = { title: 'Reading', value: 'false', label: 'Offline', icon: 'chart-line' as const, tone: 'red' as const, color: '#ff0000', summary: 'false' };
   const data = { ...device, readings: [{ ...reading, id: 'other' }, { ...reading, id: 'battery' }] };
-  const compact = deviceSummaryFields(data, true);
-  assert.equal(compact[0].id, 'output:battery'); assert.equal(compact[0].main, true); assert.equal(compact[0].value, 'false');
-  assert.equal(compact[1].id, 'attribute:a'); assert.equal(compact[1].value, '0'); assert.equal(compact[1].main, false);
-  assert.equal(deviceSummaryFields(data).length, 3);
-  assert.equal(deviceSummaryFields(device, true)[0].name, 'Interval');
+  const fields = deviceSummaryFields(data);
+  assert.equal(fields.length, 1);
+  assert.equal(fields[0].id, 'output:battery'); assert.equal(fields[0].main, true); assert.equal(fields[0].value, 'false');
+  assert.equal(fields[0].tone, 'red'); assert.equal(fields[0].label, 'Offline');
+  assert.deepEqual(deviceSummaryFields(device), []);
+  assert.deepEqual(deviceSummaryFields({ ...data, mainOutputId: undefined }), []);
+  assert.deepEqual(deviceSummaryFields({ ...data, mainOutputId: 'missing' }), []);
+  assert.deepEqual(deviceSummaryFields({ ...data, readings: [{ ...reading, id: 'battery', category: 'HIDDEN' }] }), []);
 });

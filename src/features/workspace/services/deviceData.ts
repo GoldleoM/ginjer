@@ -2,7 +2,7 @@ import type { Device, DeviceIcon } from '../../devices/types';
 import type { OutputDefinition } from './deviceInspection';
 
 export type DataTab = 'status' | 'configuration' | 'attributes';
-export interface DataField { id: string; name: string; value: string; label: string; icon: DeviceIcon; color?: string; main: boolean; }
+export interface DataField { id: string; name: string; value: string; label: string; icon: DeviceIcon; color?: string; tone?: 'red' | 'yellow' | 'green' | 'neutral'; main: boolean; }
 export function deviceDataFields(device: Device, definitions: OutputDefinition[] = [], mainOutputId = device.mainOutputId): Record<DataTab, DataField[]> {
   const groups: Record<DataTab, DataField[]> = { status: [], configuration: [], attributes: [] };
   const ids = [...new Set([...definitions.map(field => field.id), ...device.readings.map(field => field.id)])];
@@ -24,13 +24,11 @@ export function deviceDataFields(device: Device, definitions: OutputDefinition[]
 export function initialDataTab(groups: Record<DataTab, DataField[]>): DataTab {
   return groups.status.length ? 'status' : groups.configuration.length ? 'configuration' : groups.attributes.length ? 'attributes' : 'status';
 }
-export function deviceSummaryFields(device: Device, compact = false): DataField[] {
-  const outputs = device.readings.filter(reading => reading.category !== 'HIDDEN').map(reading => ({
+export function deviceSummaryFields(device: Device): DataField[] {
+  const reading = device.readings.find(reading => reading.id === device.mainOutputId && reading.category !== 'HIDDEN');
+  if (!reading) return [];
+  return [{
     id: 'output:' + reading.id, name: reading.title, value: reading.value, label: reading.label,
-    icon: reading.icon, color: reading.color, main: reading.id === device.mainOutputId,
-  })).sort((a, b) => Number(b.main) - Number(a.main));
-  const attributes: DataField[] = (device.attributes || []).map(attribute => ({
-    id: 'attribute:' + attribute.id, name: attribute.name, value: attribute.value, label: '', icon: 'tune-variant', main: false,
-  }));
-  return compact ? [...outputs.slice(0, 1), ...attributes.slice(0, 2)] : [...outputs, ...attributes];
+    icon: reading.icon, color: reading.color, tone: reading.tone, main: true,
+  }];
 }

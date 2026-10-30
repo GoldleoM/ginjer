@@ -45,21 +45,30 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
           <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.devEui || device.hardwareId}</Text>
           {!!device.clusterName && <Text style={styles.cluster}>{device.clusterName}</Text>}
         </View><MaterialCommunityIcons name="chevron-right" size={22} color="#83AF23" /></View>
-        <View style={styles.readings}>{deviceSummaryFields(device, compact).map(field => <View key={field.id} style={styles.reading}>
-          <MaterialCommunityIcons name={field.icon} size={17} color={field.color || '#858585'} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            {field.main && <Text style={{ color: '#6D941B', fontSize: 10, marginBottom: 3 }}>Main output</Text>}
-            <Text numberOfLines={compact ? 2 : undefined} style={styles.readingText}>{field.name}: {field.value}{field.label && field.label !== field.value ? ' / ' + field.label : ''}</Text>
-          </View>
-        </View>)}
-          {!deviceSummaryFields(device).length && <Text style={liveStyles.caption}>No output values or attributes reported</Text>}
-          {compact && deviceSummaryFields(device).length > deviceSummaryFields(device, true).length && <Text style={liveStyles.caption}>+{deviceSummaryFields(device).length - deviceSummaryFields(device, true).length} more fields in expanded view</Text>}
+        <View style={styles.readings}>{deviceSummaryFields(device).map(field => {
+          const palette = outputColors[field.tone || 'neutral'];
+          return <View key={field.id} style={[styles.reading, { backgroundColor: palette.background, borderColor: palette.border }]}>
+            <MaterialCommunityIcons name={field.icon} size={24} color={palette.foreground} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.outputLabel}>Main output: {field.name}</Text>
+              <Text style={[styles.readingText, { color: palette.foreground }]}>{field.value}</Text>
+              {!!field.label && field.label !== field.value && <Text style={[styles.outputDescription, { color: palette.foreground }]}>{field.label}</Text>}
+            </View>
+          </View>;
+        })}
+          {!deviceSummaryFields(device).length && <Text style={liveStyles.caption}>{device.mainOutputId ? 'Main output not reported' : 'No main output configured'}</Text>}
         </View>
         <Text style={styles.lastHeard}>Last heard · {device.lastHeard}{device.deleted ? ' · Archived' : ''}</Text>
       </Pressable></View>}
       ListEmptyComponent={<Feedback title={filter === 'archived' ? 'No archived devices' : 'No devices found'} message={query || filter !== 'current' ? 'Try another search or filter.' : 'This project has no devices to display.'} />} />
   </View>;
 }
+const outputColors = {
+  red: { foreground: '#A52A24', background: '#FFF1F0', border: '#F2BCB8' },
+  green: { foreground: '#256B38', background: '#EDF8EF', border: '#BADFC3' },
+  yellow: { foreground: '#805A00', background: '#FFF8E5', border: '#EAD799' },
+  neutral: { foreground: '#425365', background: '#F3F6F8', border: '#DCE3E9' },
+};
 const styles = StyleSheet.create({
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 12, paddingLeft: 16, paddingRight: 4, backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#EEEEEE' },
   search: { flex: 1, minWidth: 0, minHeight: 52, fontSize: 15, color: '#303030' }, clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -69,6 +78,8 @@ const styles = StyleSheet.create({
   count: { paddingHorizontal: 16, paddingVertical: 12, color: '#858585', fontSize: 11 }, list: { paddingHorizontal: 12, paddingBottom: 16, gap: 12 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12 }, name: { fontSize: 17, fontWeight: '600', color: '#303030', lineHeight: 23 },
   id: { fontSize: 11, color: '#858585', marginTop: 3 }, cluster: { fontSize: 11, color: '#AAAAAA', marginTop: 3 },
-  readings: { marginTop: 17, gap: 8 }, reading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  readingText: { flex: 1, fontSize: 12, color: '#777777', lineHeight: 18 }, lastHeard: { fontSize: 10, lineHeight: 16, color: '#AAAAAA', marginTop: 15 },
+  readings: { marginTop: 17, gap: 8 }, reading: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1 },
+  outputLabel: { fontSize: 11, color: '#59636C', lineHeight: 16, marginBottom: 4 },
+  outputDescription: { fontSize: 12, lineHeight: 18, marginTop: 3 },
+  readingText: { fontSize: 20, fontWeight: '600', lineHeight: 28 }, lastHeard: { fontSize: 10, lineHeight: 16, color: '#AAAAAA', marginTop: 15 },
 });
