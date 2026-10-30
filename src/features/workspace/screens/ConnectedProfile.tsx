@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { responsiveStyles } from '../../../layout/responsive';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { AuthUser } from '../../auth/types';
 import { ProfileAvatar, ProfileMenuRow } from '../../profile/components/ProfileUI';
 import type { Workspace } from '../useWorkspace';
@@ -13,6 +13,8 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
 }) {
   const [details, setDetails] = useState(false);
   const [editing, setEditing] = useState(false);
+  useEffect(() => { workspace.refreshAccounts(); }, [workspace.refreshAccounts]);
+  const otherAccounts = workspace.accounts.filter(account => account.id !== workspace.account?.id);
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'My account';
   return <View style={{ flex: 1 }}><ScrollView contentContainerStyle={[styles.content, responsiveStyles.readable]}>
     <Text accessibilityRole="header" style={[liveStyles.heading, { textAlign: 'center', marginBottom: 30 }]}>Profile</Text>
@@ -25,6 +27,19 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
       <ProfileMenuRow icon="account-edit-outline" label="Edit name" onPress={() => setEditing(true)} />
       <ProfileMenuRow icon="view-dashboard-outline" label={'Project · ' + (workspace.project?.name || 'Choose project')} onPress={onProjects} />
       <ProfileMenuRow icon="office-building-outline" label={'Organizations · ' + (workspace.account?.name || 'Choose organization')} onPress={onOrganizations} last />
+    </View>
+    <View style={{ marginTop: 28, gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Text accessibilityRole="header" style={liveStyles.heading}>Other organizations</Text>
+        {workspace.accountsLoading ? <ActivityIndicator color="#83AF23" accessibilityLabel="Refreshing organizations" /> : <Pressable accessibilityRole="button" onPress={workspace.refreshAccounts} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#6D941B' }}>Refresh</Text></Pressable>}
+      </View>
+      {!!workspace.accountsError && <Text accessibilityRole="alert" style={{ color: '#B42318', lineHeight: 22 }}>{workspace.accountsError}</Text>}
+      {otherAccounts.map(account => <Pressable key={account.id} accessibilityRole="button" accessibilityState={{ disabled: !account.active || !account.accepted }} disabled={!account.active || !account.accepted}
+        onPress={() => { workspace.selectAccount(account.id); onProjects(); }} style={[liveStyles.card, (!account.active || !account.accepted) && { opacity: 0.6 }]}>
+        <Text style={{ color: '#303030', fontSize: 16, fontWeight: '500' }}>{account.name}</Text>
+        <Text style={liveStyles.caption}>{!account.accepted ? 'Invitation pending' : !account.active ? 'Membership inactive' : account.admin ? 'Administrator' : 'Member'}</Text>
+      </Pressable>)}
+      {!workspace.accountsLoading && !workspace.accountsError && !otherAccounts.length && <Text style={liveStyles.caption}>The server returned no other organizations for {user.emailId}.</Text>}
     </View>
     <View style={styles.logout}><ProfileMenuRow icon="logout" label="Logout" onPress={onLogout} destructive last /></View>
   </ScrollView>

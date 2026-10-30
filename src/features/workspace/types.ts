@@ -12,7 +12,7 @@ export interface Module {
   id: string; name: string; type: string; organizationId: string | null;
 }
 export interface WorkspaceApi {
-  accounts(signal?: AbortSignal): Promise<Account[]>;
+  accounts(signal?: AbortSignal, expectedUserId?: string): Promise<Account[]>;
   projects(organizationId: string, signal?: AbortSignal): Promise<ProjectOverview[]>;
   devices(organizationId: string, projectId: string, signal?: AbortSignal): Promise<Device[]>;
   modules(organizationId: string, signal?: AbortSignal): Promise<Module[]>;

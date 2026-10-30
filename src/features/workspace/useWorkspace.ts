@@ -44,7 +44,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
   useEffect(() => {
     const controller = new AbortController();
     setAccountsLoading(true); setAccountsError('');
-    api.accounts(controller.signal).then(items => {
+    api.accounts(controller.signal, user._id).then(items => {
       if (controller.signal.aborted) return;
       setAccounts(items);
       setAccountId(current => items.some(item => item.id === current && item.active && item.accepted) ? current
@@ -53,7 +53,7 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
     }).catch(error => { if (!controller.signal.aborted) setAccountsError(message(error)); })
       .finally(() => { if (!controller.signal.aborted) setAccountsLoading(false); });
     return () => controller.abort();
-  }, [api, user.organisationId, user.defaultAccount, revision, accountsRevision]);
+  }, [api, user._id, user.organisationId, user.defaultAccount, revision, accountsRevision]);
 
   useEffect(() => {
     const controller = new AbortController();
