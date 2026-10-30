@@ -51,8 +51,12 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
             <MaterialCommunityIcons name={field.icon} size={24} color={palette.foreground} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.outputLabel}>Main output: {field.name}</Text>
-              <Text style={[styles.readingText, { color: palette.foreground }]}>{field.value}</Text>
-              {!!field.label && field.label !== field.value && <Text style={[styles.outputDescription, { color: palette.foreground }]}>{field.label}</Text>}
+              {field.switchState ? <View style={[styles.stateBadge, { backgroundColor: palette.foreground }]}>
+                <MaterialCommunityIcons name="power" size={16} color="white" />
+                <Text style={styles.stateText}>{field.switchState}</Text>
+              </View> : <Text style={[styles.readingText, { color: palette.foreground }]}>{field.value}</Text>}
+              {!!field.switchState && field.value.trim().toLowerCase() !== field.switchState.toLowerCase() && <Text style={styles.outputDescription}>{field.value}</Text>}
+              {!!field.label && field.label !== field.value && field.label.trim().toLowerCase() !== field.switchState?.toLowerCase() && <Text style={[styles.outputDescription, { color: palette.foreground }]}>{field.label}</Text>}
             </View>
           </View>;
         })}
@@ -80,6 +84,8 @@ const styles = StyleSheet.create({
   id: { fontSize: 11, color: '#858585', marginTop: 3 }, cluster: { fontSize: 11, color: '#AAAAAA', marginTop: 3 },
   readings: { marginTop: 17, gap: 8 }, reading: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1 },
   outputLabel: { fontSize: 11, color: '#59636C', lineHeight: 16, marginBottom: 4 },
+  stateBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  stateText: { color: 'white', fontSize: 15, lineHeight: 20, fontWeight: '700' },
   outputDescription: { fontSize: 12, lineHeight: 18, marginTop: 3 },
   readingText: { fontSize: 20, fontWeight: '600', lineHeight: 28 }, lastHeard: { fontSize: 10, lineHeight: 16, color: '#AAAAAA', marginTop: 15 },
 });

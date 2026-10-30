@@ -38,3 +38,15 @@ test('device list shows only the configured main output, preserving its value an
   assert.deepEqual(deviceSummaryFields({ ...data, mainOutputId: 'missing' }), []);
   assert.deepEqual(deviceSummaryFields({ ...data, readings: [{ ...reading, id: 'battery', category: 'HIDDEN' }] }), []);
 });
+
+test('explicit On and Off states get consistent colors even without API colors', () => {
+  const reading = { id: 'battery', title: 'Power', value: ' ON ', label: '', icon: 'power' as const, tone: 'neutral' as const, summary: '' };
+  const summarize = (value: string, label = '') => deviceSummaryFields({ ...device, readings: [{ ...reading, value, label }] })[0];
+  assert.equal(summarize(' ON ').tone, 'green');
+  assert.equal(summarize('off').switchState, 'Off');
+  assert.equal(summarize('off').tone, 'red');
+  assert.equal(summarize('0', 'Off').tone, 'red');
+  assert.equal(summarize('1', 'On').tone, 'green');
+  assert.equal(summarize('0').tone, 'neutral');
+  assert.equal(summarize('Offline').switchState, undefined);
+});

@@ -2,7 +2,7 @@ import type { Device, DeviceIcon } from '../../devices/types';
 import type { OutputDefinition } from './deviceInspection';
 
 export type DataTab = 'status' | 'configuration' | 'attributes';
-export interface DataField { id: string; name: string; value: string; label: string; icon: DeviceIcon; color?: string; tone?: 'red' | 'yellow' | 'green' | 'neutral'; main: boolean; }
+export interface DataField { id: string; name: string; value: string; label: string; icon: DeviceIcon; color?: string; tone?: 'red' | 'yellow' | 'green' | 'neutral'; main: boolean; switchState?: 'On' | 'Off'; }
 export function deviceDataFields(device: Device, definitions: OutputDefinition[] = [], mainOutputId = device.mainOutputId): Record<DataTab, DataField[]> {
   const groups: Record<DataTab, DataField[]> = { status: [], configuration: [], attributes: [] };
   const ids = [...new Set([...definitions.map(field => field.id), ...device.readings.map(field => field.id)])];
@@ -27,8 +27,10 @@ export function initialDataTab(groups: Record<DataTab, DataField[]>): DataTab {
 export function deviceSummaryFields(device: Device): DataField[] {
   const reading = device.readings.find(reading => reading.id === device.mainOutputId && reading.category !== 'HIDDEN');
   if (!reading) return [];
+  const stateText = [reading.label, reading.value].map(value => value.trim().toLowerCase()).find(value => value === 'on' || value === 'off');
+  const switchState = stateText === 'on' ? 'On' : stateText === 'off' ? 'Off' : undefined;
   return [{
     id: 'output:' + reading.id, name: reading.title, value: reading.value, label: reading.label,
-    icon: reading.icon, color: reading.color, tone: reading.tone, main: true,
+    icon: reading.icon, color: reading.color, tone: switchState === 'On' ? 'green' : switchState === 'Off' ? 'red' : reading.tone, main: true, switchState,
   }];
 }
