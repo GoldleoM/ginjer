@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Linking, PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import { fitMap, MAX_ZOOM, MIN_ZOOM, projectPoint, screenPoint, TILE_SIZE, unprojectPoint } from '../services/mapGeometry';
 import type { Coordinates } from '../types';
 import { WorkspacePicker } from './WorkspaceUI';
+import { MapTile } from './MapTile';
 
 const tileTemplate = process.env.EXPO_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
@@ -12,15 +13,18 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<{ center: Coordinates; zoom: number }>({ center: { lat: 0, lng: 0 }, zoom: 3 });
+  const [fittedKey, setFittedKey] = useState('');
   const [tileError, setTileError] = useState(false);
   const [tileRevision, setTileRevision] = useState(0);
   const [cluster, setCluster] = useState<Device[] | null>(null);
   const valid = devices.filter(device => !!device.coordinates);
   const positionsKey = valid.map(device => device.id + ':' + device.coordinates!.lat + ',' + device.coordinates!.lng).join('|');
+  const viewportKey = positionsKey + ':' + size.width + ':' + size.height;
   const latest = useRef(view); latest.current = view;
   const panStart = useRef({ x: 0, y: 0 });
   useEffect(() => {
     if (size.width && size.height && valid.length) setView(fitMap(valid.map(device => device.coordinates!), size.width, size.height));
+    setFittedKey(viewportKey);
     setTileError(false);
   }, [positionsKey, size.width, size.height]);
   const pan = useMemo(() => PanResponder.create({
@@ -52,9 +56,8 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
   }
   function zoomBy(delta: number) { setView(value => ({ ...value, zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value.zoom + delta)) })); setTileError(false); }
   return <View style={styles.map} onLayout={event => setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })} {...pan.panHandlers}>
-    {size.width > 0 && tiles.map(tile => <Image key={tile.key + ':' + tileRevision} accessible={false}
-      source={{ uri: tile.url, ...(Platform.OS !== 'web' ? { headers: { 'User-Agent': 'GinjerMobile/0.1 (+https://github.com/GoldleoM/ginjer)' } } : {}) }}
-      onError={() => setTileError(true)} style={{ position: 'absolute', left: tile.x, top: tile.y, width: TILE_SIZE, height: TILE_SIZE }} />)}
+    {size.width > 0 && size.height > 0 && valid.length > 0 && fittedKey === viewportKey && tiles.map(tile =>
+      <MapTile key={tile.key + ':' + tileRevision} uri={tile.url} x={tile.x} y={tile.y} size={TILE_SIZE} onError={() => setTileError(true)} />)}
     <Pressable accessibilityRole="button" accessibilityLabel="Close map selection" accessible={!!selectedId} focusable={!!selectedId}
       onPress={onBackground} style={StyleSheet.absoluteFill} />
     {[...groups.entries()].map(([key, group]) => <Pressable key={key} accessibilityRole="button"

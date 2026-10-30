@@ -53,9 +53,9 @@ The Postman file remains outside the repository. Only sanitized query definition
 
 ## Maps
 
-Live maps load only visible OpenStreetMap raster tiles, identify the native app, use normal HTTP caching, and show attribution. Tile URLs can be changed with `EXPO_PUBLIC_MAP_TILE_URL` (a template containing `{z}`, `{x}`, and `{y}`). There is no bulk download or offline-prefetch feature. Tile failures preserve device data and coordinates.
+Live maps wait for the device viewport to be fitted before loading visible OpenStreetMap raster tiles, and show attribution. Web tiles use direct image requests with `strict-origin-when-cross-origin` referrers and browser HTTP caching. Native tiles use `expo-image` disk/memory caching and a stable GinjerMobile User-Agent. Tile URLs can be changed with `EXPO_PUBLIC_MAP_TILE_URL` (a template containing `{z}`, `{x}`, and `{y}`). There is no bulk download or offline-prefetch feature. Tile failures preserve device data and coordinates.
 
-OpenStreetMap's public service has its own [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Configure a suitable tile service for deployment needs.
+OpenStreetMap's public service has its own [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Configure a suitable tile service for deployment needs, including its required attribution before switching. An existing provider/IP block cannot be cleared by an app update; contact the provider if compliant requests remain blocked. Do not rotate hosts or spoof browser identities to bypass it. Native development/standalone builds need rebuilding after adding `expo-image`; Expo Go includes the module.
 
 ## Design preview
 
