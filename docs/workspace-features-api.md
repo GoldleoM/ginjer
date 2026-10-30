@@ -14,18 +14,20 @@ Only exact device ID + organization ID + project ID matches are navigable. Missi
 
 The compact automation list uses Solution/Output filters, backend enabled switches, manual-run buttons, schedule/step counters, overflow details, and a pale-green running state. Only rules with command steps or a manual trigger appear here; notification-only rules remain in Notifications. The separate Automation Runs screen provides expandable steps, feedback/check times, and delivery-attempt tables that stack on phones.
 
-Additional contracts verified against the development schema on 2026-10-30:
+Additional contracts verified against the development and production schemas on 2026-10-30:
 
 - `solutionList` and `modules`: scoped filter/controller labels.
-- `alertSchedules(alertScheduleParamsInput: { alertId })`: actual schedule counts, filtered by organization/project/rule.
+- `alertSchedules(alertScheduleParamsInput: { alertId })`: actual schedule counts, filtered by organization/project/rule. For older time-based rules, the single `timeBasedScheduleConfigurations` object supplies a fallback count without double counting schedule records.
 - `automationRuns`: scoped run/step states, command values, feedback conditions, attempt numbers, due/sent/succeeded timestamps, notes, and downlink references.
 - `alertDownlinks(alertDownlinksParams: { alertId, pageInfo })`: delivery attempts, run/step IDs, transport, status, feedback, and failure details. Attempts load in pages of 50; older pages remain explicitly loadable. The UI does not invent a maximum retry count.
 - `toggleAlert(alertParamsInput: { organisationId, projectId, alertId })`: rereads the rule before flipping, avoids flipping an already matching state, and verifies the response identity/state.
 - `manualAutomation(alertId)`: rereads the scoped rule, checks manual support and current running history, then submits once. Only boolean `true` is accepted. A requested run is not reported as executed until run history says so. There are no automatic mutation retries.
 
+The supplied website `AlertList` request is used with `alertParamsInput: { organisationId, projectId }`. Rule details include configured timing/timezone/repetition, command port/class/delay, expected feedback, and `autoDisabled` reason/time/step. Missing settings remain absent; false and zero are preserved. Condition and feedback devices are included in scoped device links. An auto-disabled badge appears only while the rule is disabled. The supplied `ManualAutomation` operation sends only `alertId`: commands are executed by the backend from the saved rule, not replayed as individual downlinks by the client. Hardware metadata already uses `hardwareList` for device images, details and compatible controllers. No pasted token, account ID, project ID, or production URL is embedded in application requests; the shared environment and authenticated session still apply.
+
 Running/requested cards and running history refresh every 22 seconds while foregrounded. Mutation buttons guard repeated taps; server errors remain visible and permissions are enforced by the backend. Merely opening the screens does not run or toggle anything. This update manages existing automations; native rule creation/editing/deletion is not included.
 
-Verification: 95 tests, TypeScript, and Android/iOS/web exports pass. Browser interactions use intercepted API fixtures (no real automation mutations), covering filters, one-shot run/toggle requests, running-state disabling, history expansion, pagination, and phone/tablet/desktop layouts. Development schema verification was read-only. Physical automation execution still requires a user-controlled acceptance test.
+Verification: 100 tests, TypeScript, and Android/iOS/web exports pass. Browser interactions use intercepted API fixtures (no real automation mutations), covering filters, one-shot run/toggle requests, running-state disabling, history expansion, pagination, inline schedules, automatic-disable details, configured feedback, and phone/tablet/desktop layouts. The five automation operations were validated locally against fresh read-only development and production introspection schemas. Physical automation execution still requires a user-controlled acceptance test.
 
 ## Downlinks
 

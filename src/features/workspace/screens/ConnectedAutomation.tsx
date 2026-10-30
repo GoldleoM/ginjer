@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import type { Operations } from '../useOperations';
 import type { AutomationRule, ProjectScope } from '../services/operations';
-import { createAutomationApi, readableValue, type AutomationApi, type AutomationCatalog, type DetailedRun, type RunAttempt, type RunHistory } from '../services/automation';
+import { createAutomationApi, configuredScheduleCount, readableValue, type AutomationApi, type AutomationCatalog, type RunAttempt, type RunHistory } from '../services/automation';
 import { authenticatedGraphql } from '../../../services/graphql';
 import { formatTime } from '../services/normalizers';
 import { ActionIcon, DetailRow, Feedback, InfoDialog, WorkspacePicker } from '../components/WorkspaceUI';
@@ -54,7 +54,7 @@ function RuleCard({ rule, scope, api, onRuns, onMenu, onChanged }: { rule: Autom
       if (controller.signal.aborted) return;
       if (runs.status === 'fulfilled') { setHistory(runs.value); if (runs.value.runs.some(run => run.state === 'RUNNING')) setAccepted(false); }
       else setError('Run status unavailable. Refresh before sending a command.');
-      setScheduleCount(schedules.status === 'fulfilled' ? schedules.value.length : undefined);
+      setScheduleCount(configuredScheduleCount(rule, schedules.status === 'fulfilled' ? schedules.value.length : undefined));
       setLoading(false);
     });
     return () => controller.abort();
@@ -79,6 +79,7 @@ function RuleCard({ rule, scope, api, onRuns, onMenu, onChanged }: { rule: Autom
         <MaterialCommunityIcons name="play-outline" size={17} color="white" /><Text style={styles.runText}>Run Automation</Text>
       </Pressable> : <View accessibilityLabel={scheduleCount === undefined ? 'Schedules unavailable' : scheduleCount + ' schedules'} style={styles.counter}><MaterialCommunityIcons name="calendar-blank-outline" size={15} color="#858585" /><Text style={styles.counterText}>{scheduleCount ?? '-'}</Text></View>}
       {running ? <Badge state="RUNNING" /> : accepted ? <Badge state="REQUESTED" /> : null}
+      {!enabled && rule.autoDisabled && <Badge state="ERROR" label="Auto-disabled" />}
       <View accessibilityLabel={rule.actions.length + ' command steps'} style={styles.counter}><MaterialCommunityIcons name="timer-outline" size={15} color="#858585" /><Text style={styles.counterText}>{rule.actions.length}</Text></View>
       {busy && <ActivityIndicator size="small" color={theme.colors.primary} />}
     </View>
@@ -126,12 +127,39 @@ export function ConnectedAutomation({ operations, devices, onDevice, api = liveA
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: details }} onPress={() => setDetails(value => !value)} style={styles.menuRow}><MaterialCommunityIcons name="information-outline" size={21} color={theme.colors.primary} /><Text style={styles.link}>Rule details</Text><MaterialCommunityIcons name={details ? 'chevron-up' : 'chevron-down'} size={20} color="#858585" /></Pressable>
         {details && <><DetailRow label="Status" value={menu.active ? 'Enabled' : 'Disabled'} /><DetailRow label="Triggers" value={menu.triggers.map(human).join(', ')} />
           <DetailRow label="Solution" value={catalog.solutions.find(item => item.id === menu.solutionId)?.name} /><DetailRow label="Schedule" value={menu.schedule} />
-          {menu.conditions.map((condition, i) => <DetailRow key={i} label={label(condition.outputId)} value={human(condition.operator) + ' ' + condition.value} />)}
-          {menu.actions.map((action, i) => <View key={i}><Text style={styles.stepTitle}>Step {i + 1}</Text><DetailRow label={label(action.interfaceId)} value={readableValue(action.value)} /><DetailRow label="Delay (minutes)" value={action.delay} /></View>)}
+          {!!menu.autoDisabled && <View style={styles.disabledNotice}><Text style={styles.stepTitle}>{menu.active ? 'Last automatic disable' : 'Disabled automatically'}</Text><DetailRow label="Reason" value={human(menu.autoDisabled.reason)} /><DetailRow label="At" value={menu.autoDisabled.at ? formatTime(menu.autoDisabled.at) : undefined} /><DetailRow label="Step" value={menu.autoDisabled.stepIndex == null ? undefined : menu.autoDisabled.stepIndex + 1} /></View>}
+          {!!menu.scheduleConfiguration && <ScheduleDetails schedule={menu.scheduleConfiguration} />}
+          {menu.conditions.map((condition, i) => <View key={i}>{i > 0 && !!condition.relation && <Text style={styles.caption}>{human(condition.relation)}</Text>}<DetailRow label={label(condition.outputId)} value={human(condition.operator) + ' ' + condition.value} /></View>)}
+          {menu.actions.map((action, i) => {
+            const device = devices.find(d => d.id === action.deviceId && d.organizationId === scope.organisationId && d.projectId === scope.projectId);
+            const feedbackDevice = devices.find(d => d.id === action.feedback?.deviceId && d.organizationId === scope.organisationId && d.projectId === scope.projectId);
+            return <View key={i} style={styles.configStep}><View style={styles.stepHeading}><Text style={styles.stepTitle}>Step {i + 1}{device ? ' - ' + device.name : ''}</Text>{action.active === false && <Badge state="DISABLED" />}</View>
+              <DetailRow label={label(action.interfaceId)} value={readableValue(action.value)} />
+              <RuleFields fields={[
+                ['Delay (minutes)', action.delay], ['Downlink port', action.port], ['Device class', action.deviceClass.replace(/^CLASS_/, 'Class ')], ['Trigger', human(action.trigger)],
+              ]} />
+              {action.feedback && <View style={styles.feedbackConfig}><Text style={styles.stepTitle}>Expected feedback</Text><DetailRow label="Device" value={feedbackDevice?.name || action.feedback.deviceId} /><DetailRow label={label(action.feedback.outputId)} value={human(action.feedback.operator) + ' ' + action.feedback.value} /><DetailRow label="Check after (minutes)" value={action.feedback.timeout} /></View>}
+            </View>;
+          })}
           {menu.deviceIds.map(id => { const device = devices.find(d => d.id === id && d.organizationId === scope.organisationId && d.projectId === scope.projectId); return device ? <Pressable key={id} accessibilityRole="button" onPress={() => { setMenuId(''); onDevice(device); }} style={styles.textButton}><Text style={styles.link}>{device.name}</Text></Pressable> : null; })}
         </>}
       </View>}
     </InfoDialog>
+  </View>;
+}
+
+function RuleFields({ fields }: { fields: [string, unknown][] }) {
+  return <ResponsiveGrid minimumWidth={125} maximumColumns={2} gap={8}>
+    {fields.filter(([, value]) => value !== undefined && value !== null && value !== '').map(([label, value]) => <DetailRow key={label} label={label} value={value} />)}
+  </ResponsiveGrid>;
+}
+function ScheduleDetails({ schedule }: { schedule: NonNullable<AutomationRule['scheduleConfiguration']> }) {
+  return <View style={styles.configStep}><Text style={styles.stepTitle}>Configured schedule</Text>
+    <RuleFields fields={[
+      ['Type', human(schedule.type)], ['Interval (minutes)', schedule.interval], ['Start time', schedule.time], ['Second time', schedule.secondTime], ['End time', schedule.endTime],
+      ['Start date', schedule.date ? formatTime(schedule.date) : undefined], ['Timezone', schedule.timezone], ['Repeat', human(schedule.repeatType)], ['Days', schedule.repeatOn.map(human).join(', ')],
+      ['Ends', schedule.end ? human(schedule.end.type) : undefined], ['End date', schedule.end?.date ? formatTime(schedule.end.date) : undefined], ['Occurrences', schedule.end?.occurrences],
+    ]} />
   </View>;
 }
 
@@ -195,6 +223,7 @@ function AttemptRows({ attempts }: { attempts: RunAttempt[] }) {
   </View>;
 }
 const styles = StyleSheet.create({
+  configStep: { borderTopWidth: 1, borderTopColor: '#EEEEEE', paddingTop: 12, gap: 6 }, feedbackConfig: { padding: 10, borderRadius: 8, backgroundColor: '#F4F7ED' }, disabledNotice: { padding: 10, borderRadius: 8, backgroundColor: '#FFF3EF' },
   content: { padding: 12, paddingBottom: 24, gap: 8 }, stack: { gap: 10 }, filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingTop: 8, marginBottom: 4 },
   filter: { flex: 1, minWidth: 120, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#D1D1D1', borderRadius: 10, backgroundColor: 'white', paddingHorizontal: 12 },
   filterLabel: { position: 'absolute', top: -8, left: 10, paddingHorizontal: 4, fontSize: 10, color: '#76972E', backgroundColor: '#FAFAFA' }, filterValue: { flex: 1, color: '#303030', fontSize: 13 },

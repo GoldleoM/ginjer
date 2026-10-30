@@ -65,6 +65,10 @@ export function readableValue(value: unknown, depth = 0): string {
   if (depth > 3) return 'Nested value';
   return Object.entries(value).map(([key, v]) => `${key}: ${readableValue(v, depth + 1)}`).join(', ') || 'Not reported';
 }
+export function configuredScheduleCount(rule: AutomationRule, reported?: number): number | undefined {
+  // Older rules keep their schedule on Alert instead of in alertSchedules.
+  return reported ? reported : rule.triggers.includes('TIME_BASED_SCHEDULE') && rule.scheduleConfiguration ? 1 : reported;
+}
 export const AUTOMATION_HISTORY = `query AutomationDetails($params: AutomationRunsInput!) { automationRuns(automationRunsParams: $params) {
  alertId organisationId metadata { currentPage totalPages totalRecords }
  runs { _id organisationId projectId alertId state active trigger triggeredAt finishedAt currentStep skippedTriggers abortReason cancelReason
@@ -78,7 +82,7 @@ const SCHEDULES = 'query AutomationSchedules($params: AlertScheduleParamsInput!)
 const CATALOG = 'query AutomationCatalog($params: ParamInput!) { solutionList(params: $params) { _id name organisationId deleted } modules(params: $params) { _id label organisationId } }';
 const VERIFY = 'query VerifyAutomation($params: AlertParamsInput!) { alerts(alertParamsInput: $params) { _id organisationId projectId active deleted triggerTypes advanceConditions { deviceId downlinkInterfaceId } } }';
 export const TOGGLE_AUTOMATION = 'mutation ToggleAutomation($params: AlertParamsInput!) { toggleAlert(alertParamsInput: $params) { _id organisationId projectId active deleted } }';
-export const RUN_AUTOMATION = 'mutation RunAutomation($alertId: ID!) { manualAutomation(alertId: $alertId) }';
+export const RUN_AUTOMATION = 'mutation ManualAutomation($alertId: ID!) { manualAutomation(alertId: $alertId) }';
 export function createAutomationApi(request: ApiRequest) {
   async function verify(scope: ProjectScope, rule: AutomationRule) {
     check(scope, rule.id);

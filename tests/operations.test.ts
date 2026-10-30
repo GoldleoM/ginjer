@@ -42,7 +42,8 @@ test('rules and notification APIs use project scoping and pass cancellation', as
   const request = (async (query, variables, passed) => { calls.push({ query, variables, signal: passed }); return { alerts: [rule], triggeredAlerts: [notification] }; }) as ApiRequest;
   const api = createOperationsApi(request);
   assert.equal((await api.rules(scope, signal)).length, 1); assert.equal((await api.notifications(scope, signal)).length, 1);
-  for (const call of calls) { assert.deepEqual(call.variables, { params: scope }); assert.equal(call.signal, signal); }
+  assert.deepEqual(calls[0].variables, { alertParamsInput: scope }); assert.deepEqual(calls[1].variables, { params: scope });
+  for (const call of calls) assert.equal(call.signal, signal);
   assert.match(calls[0].query, /alerts\(alertParamsInput/); assert.match(calls[1].query, /triggeredAlerts\(triggeredAlertParamsInput/);
   await assert.rejects(api.rules({ ...scope, organisationId: '' }));
 });

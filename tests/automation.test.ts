@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createAutomationApi, normalizeRunHistory, normalizeAttempts, readableValue, RUN_AUTOMATION, TOGGLE_AUTOMATION } from '../src/features/workspace/services/automation.ts';
-import { normalizeRules } from '../src/features/workspace/services/operations.ts';
+import { createAutomationApi, configuredScheduleCount, normalizeRunHistory, normalizeAttempts, readableValue, RUN_AUTOMATION, TOGGLE_AUTOMATION } from '../src/features/workspace/services/automation.ts';
+import { normalizeRules, createOperationsApi } from '../src/features/workspace/services/operations.ts';
 import type { ApiRequest } from '../src/services/graphqlTransport.ts';
 const scope = { organisationId: 'org', projectId: 'project' };
 const raw = { _id: 'rule', ...scope, name: 'Pump On', active: true, triggerTypes: ['MANUAL'], advanceConditions: [{ deviceId: 'device', downlinkInterfaceId: 'controller' }] };
@@ -77,4 +77,57 @@ test('missing run data cannot be interpreted as permission to start another run'
   let sent = false;
   const api = createAutomationApi((async q => { if (q === RUN_AUTOMATION) sent = true; return q.includes('VerifyAutomation') ? { alerts: [raw] } : { automationRuns: { ...root, runs: undefined } }; }) as ApiRequest);
   await assert.rejects(api.run(scope, rule), /valid automation runs/); assert.equal(sent, false);
+});
+
+test('website AlertList shape preserves command settings, feedback and linked condition devices', async () => {
+  const signal = new AbortController().signal;
+  const api = createOperationsApi((async (_query, variables, passed) => {
+    assert.deepEqual(variables, { alertParamsInput: scope }); assert.equal(passed, signal);
+    return { alerts: [{ ...raw,
+      conditions: [{ outputId: 'temp', conditionType: 'GREATER_THAN', value: '28', relationType: 'AND', devices: [{ deviceId: 'sensor' }] }],
+      advanceConditions: [{ deviceId: 'device', downlinkInterfaceId: 'controller', value: false, scheduleInMin: 0, port: 1, deviceClass: 'CLASS_C', triggerType: 'MANUAL', active: false,
+        feedback: { deviceId: 'feedback-device', outputId: 'relay', conditionType: 'EQUAL_TO', value: '0', timeoutInMin: 0 } }],
+    }, { ...raw, projectId: 'foreign' }] };
+  }) as ApiRequest);
+  const [item] = await api.rules(scope, signal);
+  assert.deepEqual(item.deviceIds, ['sensor', 'device', 'feedback-device']);
+  assert.equal(item.conditions[0].relation, 'AND');
+  assert.equal(item.actions[0].value, false); assert.equal(item.actions[0].delay, 0); assert.equal(item.actions[0].active, false);
+  assert.equal(item.actions[0].port, 1); assert.equal(item.actions[0].deviceClass, 'CLASS_C');
+  assert.equal(item.actions[0].feedback?.value, '0'); assert.equal(item.actions[0].feedback?.timeout, 0);
+});
+
+test('legacy inline schedules provide a count without double counting alertSchedules', () => {
+  const [item] = normalizeRules([{ ...raw, triggerTypes: ['TIME_BASED_SCHEDULE'], timeBasedScheduleConfigurations: {
+    type: 'CUSTOM', scheduleInMin: 30, triggerTime: '08:00', triggerTimezone: 'Asia/Kolkata', repeatType: 'WEEKLY', repeatOn: ['MONDAY', 'FRIDAY'],
+    triggerEndTime: false, endTime: '19:00', endTimeSchedule: { type: 'AFTER_OCCURRENCES', noOfOccurrences: 10 },
+  } }], scope);
+  assert.equal(item.scheduleConfiguration?.timezone, 'Asia/Kolkata');
+  assert.deepEqual(item.scheduleConfiguration?.repeatOn, ['MONDAY', 'FRIDAY']);
+  assert.equal(item.scheduleConfiguration?.endTime, ''); assert.equal(item.scheduleConfiguration?.end?.occurrences, 10);
+  assert.equal(configuredScheduleCount(item, 0), 1); assert.equal(configuredScheduleCount(item, undefined), 1);
+  assert.equal(configuredScheduleCount(item, 3), 3); assert.equal(configuredScheduleCount(rule, 0), 0); assert.equal(configuredScheduleCount(rule), undefined);
+});
+
+test('automatic disable reasons retain the first step and do not override active state', () => {
+  const [item] = normalizeRules([{ ...raw, active: false, autoDisabled: { at: '2026-10-30T12:00:00Z', runId: 'run', stepIndex: 0, reason: 'DEVICE_DELETED', deviceId: 'device' } }], scope);
+  assert.equal(item.autoDisabled?.stepIndex, 0); assert.equal(item.autoDisabled?.reason, 'DEVICE_DELETED');
+  assert.equal(item.autoDisabled?.at, '2026-10-30T12:00:00.000Z'); assert.equal(item.active, false);
+});
+
+test('missing schedule and command settings remain unknown instead of invented defaults', () => {
+  assert.equal(rule.scheduleConfiguration, undefined); assert.equal(rule.autoDisabled, undefined);
+  assert.equal(rule.actions[0].port, undefined); assert.equal(rule.actions[0].delay, undefined); assert.equal(rule.actions[0].feedback, undefined);
+});
+
+test('manual automation sends only its ID and never replays configured downlinks', async () => {
+  const commands = [{ deviceId: 'device', downlinkInterfaceId: 'controller', value: { relay: false }, port: 17, deviceClass: 'CLASS_A', scheduleInMin: 3 }];
+  const [configured] = normalizeRules([{ ...raw, advanceConditions: commands }], scope);
+  const writes: { query: string; variables: unknown }[] = [];
+  const api = createAutomationApi((async (query, variables) => {
+    if (query.startsWith('mutation')) { writes.push({ query, variables }); return { manualAutomation: true }; }
+    return query.includes('VerifyAutomation') ? { alerts: [{ ...raw, advanceConditions: commands }] } : { automationRuns: { ...root, runs: [] } };
+  }) as ApiRequest);
+  await api.run(scope, configured);
+  assert.deepEqual(writes, [{ query: RUN_AUTOMATION, variables: { alertId: 'rule' } }]);
 });
