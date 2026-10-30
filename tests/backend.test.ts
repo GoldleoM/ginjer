@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeAccounts, normalizeDevices, normalizeProjects, normalizeModules, coordinates, displayValue, timestamp } from '../src/features/workspace/services/normalizers.ts';
+import { normalizeAccounts, normalizeDevices, normalizeProjects, normalizeModules, coordinates, displayValue, timestamp, withHardwareImages } from '../src/features/workspace/services/normalizers.ts';
 
 test('normalizes memberships without treating inactive invitations as accessible', () => {
   assert.deepEqual(normalizeAccounts([{organisationId:'org',name:'Org',isActive:false,isAccepted:false,isAdmin:true},{}]), [
@@ -41,4 +41,23 @@ test('rejects malformed coordinates and normalizes seconds/milliseconds timestam
 });
 test('module catalog keeps shared and organization modules without guessed configurations', () => {
   assert.deepEqual(normalizeModules([{_id:'m',label:'Module',moduleType:'custom',organisationId:null}]),[{id:'m',name:'Module',type:'custom',organizationId:null}]);
+});
+test('device thumbnails resolve shared and current-organization hardware before opening details', () => {
+  const devices = normalizeDevices([{ _id: 'p', clusters: [{ devices: [
+    { _id: 'a', organisationId: 'org', hardwareId: 'shared' },
+    { _id: 'b', organisationId: 'org', hardwareId: 'owned' },
+    { _id: 'c', organisationId: 'org', hardwareId: 'foreign' },
+    { _id: 'd', organisationId: 'org', hardwareId: 'unsafe' },
+  ] }] }]);
+  const result = withHardwareImages(devices, [
+    { _id: 'shared', image: { location: 'https://example.test/shared.png' } },
+    { _id: 'owned', organisationId: 'org', image: { location: 'https://example.test/owned.png' } },
+    { _id: 'foreign', organisationId: 'other', image: { location: 'https://example.test/foreign.png' } },
+    { _id: 'unsafe', image: { location: 'javascript:alert(1)' } },
+  ], 'org');
+  assert.deepEqual(result[0].image, { uri: 'https://example.test/shared.png' });
+  assert.deepEqual(result[1].image, { uri: 'https://example.test/owned.png' });
+  assert.equal(result[2].image, undefined); assert.equal(result[3].image, undefined);
+  assert.ok(devices.every(device => device.image === undefined));
+  assert.deepEqual(withHardwareImages(devices, null, 'org'), devices);
 });

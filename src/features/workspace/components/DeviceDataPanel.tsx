@@ -22,7 +22,7 @@ export function DeviceDataPanel({ device, mainOutputId, definitions, loading = f
       <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{value === 'status' ? 'Status' : value === 'configuration' ? 'Configuration' : 'Attributes'}</Text>
       <Text style={[styles.count, tab === value && styles.activeTabText]}>{groups[value].length}</Text>
     </Pressable>)}</View>
-    {fields.length ? <ResponsiveGrid minimumWidth={220} maximumColumns={4} gap={14}>{fields.map(field => <View key={field.id} style={styles.card}>
+    {fields.length ? <ResponsiveGrid minimumWidth={160} maximumColumns={6} gap={12}>{fields.map(field => <View key={field.id} style={styles.card}>
       <View style={styles.cardHeader}><Text style={styles.name}>{field.name}</Text><MaterialCommunityIcons name={field.icon} size={21} color={field.color || '#8DA65B'} /></View>
       <Text selectable style={[styles.value, field.color ? { color: field.color } : undefined]}>{field.value || 'Not reported'}</Text>
       {!!field.label && field.label !== field.value && <Text style={styles.label}>{field.label}</Text>}
@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', flexWrap: 'wrap', alignSelf: 'flex-start', maxWidth: '100%', padding: 4, gap: 4, backgroundColor: '#F1F1F1', borderRadius: 10 },
   tab: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 44, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 7 },
   activeTab: { backgroundColor: 'white' }, tabText: { color: '#858585', fontSize: 14, fontWeight: '500' }, activeTabText: { color: '#303830' }, count: { fontSize: 11, color: '#999999' },
-  card: { minHeight: 150, height: '100%', borderRadius: 15, borderWidth: 1.5, borderColor: '#C9DAA8', backgroundColor: '#FAFBF8', padding: 16, shadowColor: '#526B2F', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 2 },
+  card: { minHeight: 112, maxWidth: 280, borderRadius: 12, borderWidth: 1.5, borderColor: '#C9DAA8', backgroundColor: '#FAFBF8', padding: 12, shadowColor: '#526B2F', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 }, name: { flex: 1, minWidth: 0, color: '#747872', fontSize: 14, fontWeight: '600', lineHeight: 21 },
-  value: { marginTop: 22, marginBottom: 6, fontSize: 25, lineHeight: 34, color: '#303830', fontWeight: '600', flexShrink: 1 }, label: { fontSize: 12, lineHeight: 20, color: '#858B80' },
+  value: { marginTop: 12, marginBottom: 4, fontSize: 20, lineHeight: 28, color: '#303830', fontWeight: '600', flexShrink: 1 }, label: { fontSize: 12, lineHeight: 20, color: '#858B80' },
   badge: { flexDirection: 'row', gap: 5, alignItems: 'center', alignSelf: 'flex-start', borderRadius: 12, backgroundColor: '#EDF3E2', paddingHorizontal: 8, paddingVertical: 4, marginTop: 10 }, dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#83AF23' }, badgeText: { color: '#6D8D30', fontSize: 10 },
   fieldId: { color: '#8A9084', fontSize: 10, lineHeight: 16, marginTop: 12 }, empty: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 10 },
 });

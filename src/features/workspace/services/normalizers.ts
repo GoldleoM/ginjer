@@ -106,3 +106,15 @@ export function normalizeModules(value: unknown): Module[] {
     id: text(data._id), name: text(data.label, 'Unnamed module'), type: text(data.moduleType, 'Not reported'), organizationId: data.organisationId == null ? null : text(data.organisationId),
   }; }).filter(item => !!item.id);
 }
+export function withHardwareImages(devices: Device[], hardwareItems: unknown, organizationId: string): Device[] {
+  const images = new Map<string, string>();
+  for (const value of list(hardwareItems)) {
+    const hardware = record(value), uri = text(record(hardware.image).location);
+    if (hardware.deleted === true || (hardware.organisationId != null && hardware.organisationId !== organizationId)) continue;
+    if (hardware._id && /^https:\/\//i.test(uri)) images.set(text(hardware._id), uri);
+  }
+  return devices.map(device => {
+    const uri = device.organizationId === organizationId ? images.get(device.hardwareId) : undefined;
+    return uri ? { ...device, image: { uri } } : device;
+  });
+}

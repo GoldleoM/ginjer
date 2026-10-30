@@ -14,8 +14,9 @@ export function ActionIcon({ icon, label, onPress, disabled = false }: {
     style={({ pressed }) => [styles.icon, (pressed || disabled) && { opacity: 0.45 }]}><MaterialCommunityIcons name={icon} size={23} color={liveColors.green} /></Pressable>;
 }
 export function DeviceThumbnail({ device, size = 44 }: { device: Device; size?: number }) {
+  const [failedImage, setFailedImage] = useState<Device['image']>();
   return <View style={[styles.thumbnail, { width: size, height: size }]}>
-    {device.image ? <Image source={device.image} resizeMode="contain" style={{ width: '100%', height: '100%' }} />
+    {device.image && device.image !== failedImage ? <Image source={device.image} onError={() => setFailedImage(device.image)} resizeMode="contain" style={{ width: '100%', height: '100%' }} />
       : <MaterialCommunityIcons name={device.icon ?? 'router-wireless'} size={size * 0.57} color="#83AF23" />}
   </View>;
 }
