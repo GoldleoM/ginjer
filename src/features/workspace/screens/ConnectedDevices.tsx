@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useResponsiveColumns } from '../../../layout/responsive';
 import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
@@ -7,6 +8,7 @@ import { DeviceThumbnail, Feedback, liveStyles } from '../components/WorkspaceUI
 import { formatTime } from '../services/normalizers';
 
 export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace; onSelect: (device: Device) => void }) {
+  const { columns, itemStyle, onLayout } = useResponsiveColumns();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'current' | 'recent' | 'attention' | 'archived'>('current');
   const devices = useMemo(() => workspace.devices.filter(device =>
@@ -14,7 +16,9 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
     && (filter !== 'recent' || device.recent) && (filter !== 'attention' || device.needsAttention)
     && (device.name + ' ' + device.hardwareId + ' ' + device.devEui + ' ' + device.clusterName).toLowerCase().includes(query.trim().toLowerCase())
   ), [workspace.devices, query, filter]);
-  return <View style={{ flex: 1 }}>
+  return <View style={{ flex: 1, minHeight: 0 }} onLayout={onLayout}>
+    <FlatList key={columns} numColumns={columns} columnWrapperStyle={columns > 1 ? { gap: 12 } : undefined}
+      ListHeaderComponent={<View style={{ marginHorizontal: -12 }}>
     <View style={styles.searchBox}><MaterialCommunityIcons name="magnify" size={23} color="#858585" />
       <TextInput value={query} onChangeText={setQuery} accessibilityLabel="Search devices by name, ID, or cluster" placeholder="Search Devices" autoCapitalize="none" autoCorrect={false}
         style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
@@ -24,9 +28,9 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
       <Pressable key={id} accessibilityRole="button" accessibilityState={{ selected: id === filter }} onPress={() => setFilter(id)}
         style={[styles.chip, id === filter && styles.selectedChip]}><Text style={[styles.chipText, id === filter && { color: '#6D941B' }]}>{label}</Text></Pressable>)}</View>
     <Text style={styles.count}>{devices.length} {devices.length === 1 ? 'device' : 'devices'}{workspace.updatedAt ? ' · Updated ' + formatTime(workspace.updatedAt) : ''}</Text>
-    <FlatList data={devices} keyExtractor={device => device.id} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}
+      </View>} data={devices} keyExtractor={device => device.id} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#83AF23" />}
-      renderItem={({ item: device }) => <Pressable accessibilityRole="button" accessibilityLabel={device.name + ', ' + device.hardwareId + '. View details'}
+      renderItem={({ item: device }) => <View style={itemStyle}><Pressable accessibilityRole="button" accessibilityLabel={device.name + ', ' + device.hardwareId + '. View details'}
         onPress={() => onSelect(device)} style={({ pressed }) => [liveStyles.card, pressed && { opacity: 0.7 }]}>
         <View style={styles.identity}><DeviceThumbnail device={device} /><View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.hardwareId}</Text>
@@ -40,7 +44,7 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
           {device.readings.length > 2 && <Text style={liveStyles.caption}>+{device.readings.length - 2} more outputs</Text>}
         </View>
         <Text style={styles.lastHeard}>Last heard · {device.lastHeard}{device.deleted ? ' · Archived' : ''}</Text>
-      </Pressable>}
+      </Pressable></View>}
       ListEmptyComponent={<Feedback title={filter === 'archived' ? 'No archived devices' : 'No devices found'} message={query || filter !== 'current' ? 'Try another search or filter.' : 'This project has no devices to display.'} />} />
   </View>;
 }
@@ -48,7 +52,7 @@ const styles = StyleSheet.create({
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 12, paddingLeft: 16, paddingRight: 4, backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#EEEEEE' },
   search: { flex: 1, minWidth: 0, minHeight: 52, fontSize: 15, color: '#303030' }, clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: 12 },
-  chip: { paddingHorizontal: 11, minHeight: 36, justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: '#E6E6E6', backgroundColor: 'white' },
+  chip: { paddingHorizontal: 11, minHeight: 44, justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: '#E6E6E6', backgroundColor: 'white' },
   selectedChip: { borderColor: '#83AF23', backgroundColor: '#F1F6E7' }, chipText: { color: '#858585', fontSize: 12 },
   count: { paddingHorizontal: 16, paddingVertical: 12, color: '#858585', fontSize: 11 }, list: { paddingHorizontal: 12, paddingBottom: 16, gap: 12 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12 }, name: { fontSize: 17, fontWeight: '600', color: '#303030', lineHeight: 23 },

@@ -1,5 +1,7 @@
 import React, { type ReactNode, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { responsiveStyles, useResponsiveLayout } from '../../../layout/responsive';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Device } from '../../devices/types';
 import { Image } from 'react-native';
@@ -20,12 +22,14 @@ export function DeviceThumbnail({ device, size = 44 }: { device: Device; size?: 
 export function WorkspaceBar({ organization, project, busy, onOrganizations, onProjects, onInfo, onRefresh }: {
   organization?: string; project?: string; busy: boolean; onOrganizations: () => void; onProjects: () => void; onInfo: () => void; onRefresh: () => void;
 }) {
+  const { isTablet, isShort } = useResponsiveLayout();
+  const inline = isTablet || isShort;
   return <View style={styles.workspace}>
-    <View style={{ flex: 1, minWidth: 0 }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Choose organization" onPress={onOrganizations} style={styles.scopeLine}>
+    <View style={[{ flex: 1, minWidth: 0 }, inline && { flexDirection: 'row', gap: 16 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Choose organization" onPress={onOrganizations} style={[styles.scopeLine, inline && { flex: 1 }]}>
         <Text numberOfLines={1} style={styles.organization}>{organization || 'Choose organization'}</Text><MaterialCommunityIcons name="chevron-down" size={18} color="#83AF23" />
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Choose project" onPress={onProjects} style={styles.scopeLine}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Choose project" onPress={onProjects} style={[styles.scopeLine, inline && { flex: 1 }]}>
         <Text numberOfLines={1} style={styles.project}>{project || 'Choose project'}</Text><MaterialCommunityIcons name="chevron-down" size={16} color="#858585" />
       </Pressable>
     </View>
@@ -43,10 +47,10 @@ export function Feedback({ title, message, busy, onRetry }: { title?: string; me
 }
 export function InfoDialog({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-    <View style={styles.overlay}><Pressable accessibilityRole="button" accessibilityLabel="Close information" onPress={onClose} style={StyleSheet.absoluteFill} />
+    <SafeAreaView style={styles.overlay} edges={['top', 'bottom', 'left', 'right']}><Pressable accessibilityRole="button" accessibilityLabel="Close information" onPress={onClose} style={StyleSheet.absoluteFill} />
       <View accessibilityViewIsModal style={styles.dialog}><View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text>
-        <ActionIcon icon="close" label="Close information" onPress={onClose} /></View><ScrollView contentContainerStyle={{ paddingBottom: 12 }}>{children}</ScrollView></View>
-    </View>
+        <ActionIcon icon="close" label="Close information" onPress={onClose} /></View><ScrollView style={{ flexShrink: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: 12 }}>{children}</ScrollView></View>
+    </SafeAreaView>
   </Modal>;
 }
 export function DetailRow({ label, value }: { label: string; value: unknown }) {
@@ -60,24 +64,24 @@ export function WorkspacePicker({ title, items, selectedId, onSelect, onClose }:
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => items.filter(item => (item.name + ' ' + (item.subtitle ?? '')).toLowerCase().includes(query.trim().toLowerCase())), [items, query]);
   return <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-    <View style={styles.overlay}><Pressable accessibilityRole="button" accessibilityLabel="Close selector" onPress={onClose} style={StyleSheet.absoluteFill} />
-      <View accessibilityViewIsModal style={[styles.dialog, { height: '75%', maxHeight: 640 }]}>
+    <SafeAreaView style={styles.overlay} edges={['top', 'bottom', 'left', 'right']}><Pressable accessibilityRole="button" accessibilityLabel="Close selector" onPress={onClose} style={StyleSheet.absoluteFill} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} accessibilityViewIsModal style={[styles.dialog, { height: '75%', maxHeight: '100%' }]}>
         <View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text><ActionIcon icon="close" label="Close selector" onPress={onClose} /></View>
         <TextInput value={query} onChangeText={setQuery} accessibilityLabel={'Search ' + title} placeholder={'Search ' + title.toLowerCase()} autoCorrect={false}
           style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
-        <FlatList data={filtered} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled"
+        <FlatList data={filtered} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" style={{ minHeight: 0, flexShrink: 1 }}
           renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityState={{ selected: item.id === selectedId, disabled: !!item.disabled }}
             disabled={item.disabled} onPress={() => onSelect(item.id)} style={[styles.pickerRow, item.id === selectedId && { backgroundColor: '#F2F6E9' }, item.disabled && { opacity: 0.5 }]}>
-            <View style={{ flex: 1 }}><Text style={styles.pickerName}>{item.name}</Text>{!!item.subtitle && <Text style={styles.pickerSubtitle}>{item.subtitle}</Text>}</View>
+            <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.pickerName}>{item.name}</Text>{!!item.subtitle && <Text style={styles.pickerSubtitle}>{item.subtitle}</Text>}</View>
             {item.id === selectedId && <MaterialCommunityIcons name="check" size={21} color="#83AF23" />}
           </Pressable>}
           ListEmptyComponent={<Feedback title="No matches" message="Try another search." />} />
-      </View>
-    </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   </Modal>;
 }
 export const liveStyles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F6F6F6' }, shell: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  safe: { flex: 1, backgroundColor: '#F6F6F6' }, shell: responsiveStyles.shell,
   card: { backgroundColor: 'white', borderRadius: 10, padding: 16, borderWidth: 1, borderColor: '#EEEEEE' },
   heading: { fontSize: 18, fontWeight: '600', color: '#303030' }, caption: { color: '#858585', fontSize: 12, lineHeight: 18 },
 });
@@ -85,7 +89,7 @@ const styles = StyleSheet.create({
   icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   thumbnail: { borderWidth: 1, borderColor: '#EEEEEE', borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAF4', overflow: 'hidden' },
   workspace: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EEEEEE' },
-  scopeLine: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%' },
+  scopeLine: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%' },
   organization: { color: '#303030', fontSize: 15, fontWeight: '600', flexShrink: 1 },
   project: { color: '#858585', fontSize: 12, flexShrink: 1 },
   feedback: { alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12, minHeight: 220 },
@@ -93,10 +97,10 @@ const styles = StyleSheet.create({
   feedbackText: { fontSize: 14, lineHeight: 22, color: '#858585', textAlign: 'center' },
   action: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 },
   actionText: { color: '#6D941B', fontWeight: '600' },
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#00000066' },
-  dialog: { width: '100%', maxWidth: 520, maxHeight: '85%', backgroundColor: 'white', borderRadius: 16, padding: 18 },
-  dialogHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  dialogTitle: { flex: 1, fontSize: 19, fontWeight: '600', color: '#303030' },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16, backgroundColor: '#00000066' },
+  dialog: { width: '100%', maxWidth: 520, maxHeight: '100%', backgroundColor: 'white', borderRadius: 16, padding: 18 },
+  dialogHeader: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  dialogTitle: { flex: 1, minWidth: 0, fontSize: 19, fontWeight: '600', color: '#303030' },
   detailRow: { paddingVertical: 11, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#EEEEEE' },
   detailLabel: { color: '#858585', fontSize: 12 },
   detailValue: { color: '#303030', fontSize: 14, lineHeight: 21 },

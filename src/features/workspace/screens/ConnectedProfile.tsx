@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { responsiveStyles } from '../../../layout/responsive';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { AuthUser } from '../../auth/types';
 import { ProfileAvatar, ProfileMenuRow } from '../../profile/components/ProfileUI';
@@ -10,10 +11,10 @@ export function ConnectedProfile({ user, workspace, onOrganizations, onProjects,
 }) {
   const [details, setDetails] = useState(false);
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'My account';
-  return <View style={{ flex: 1 }}><ScrollView contentContainerStyle={styles.content}>
+  return <View style={{ flex: 1 }}><ScrollView contentContainerStyle={[styles.content, responsiveStyles.readable]}>
     <Text accessibilityRole="header" style={[liveStyles.heading, { textAlign: 'center', marginBottom: 30 }]}>Profile</Text>
     <View style={styles.identity}><ProfileAvatar firstName={user.firstName || ''} lastName={user.lastName || ''} variant="initials" />
-      <View style={{ flex: 1 }}><Text style={styles.name}>{fullName}</Text><Text selectable style={styles.email}>{user.emailId}</Text></View>
+      <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{fullName}</Text><Text selectable style={styles.email}>{user.emailId}</Text></View>
     </View>
     {!!workspace.account && <Text style={styles.role}>{workspace.account.admin ? 'Administrator' : 'Member'} · {workspace.account.name}</Text>}
     <View style={styles.menu}>

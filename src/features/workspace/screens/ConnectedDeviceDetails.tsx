@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ResponsiveGrid } from '../../../layout/responsive';
 import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -15,22 +16,22 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
     try { await Linking.openURL('https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lng + '#map=16/' + lat + '/' + lng); }
     catch { setMapError('Unable to open the map. Please try again.'); }
   }
-  return <SafeAreaView style={liveStyles.safe}><View style={liveStyles.shell}>
-    <View style={styles.header}><ActionIcon icon="arrow-left" label="Back to previous page" onPress={onBack} /><Text accessibilityRole="header" style={liveStyles.heading}>Device Details</Text>{onRefresh ? refreshing ? <View style={{ width: 44 }}><ActivityIndicator color="#83AF23" /></View> : <ActionIcon icon="refresh" label="Refresh device" onPress={onRefresh} /> : <View style={{ width: 44 }} />}</View>
+  return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom', 'left', 'right']}><View style={liveStyles.shell}>
+    <View style={styles.header}><ActionIcon icon="arrow-left" label="Back to previous page" onPress={onBack} /><Text accessibilityRole="header" style={[liveStyles.heading, { flex: 1, minWidth: 0, textAlign: 'center' }]}>Device Details</Text>{onRefresh ? refreshing ? <View style={{ width: 44 }}><ActivityIndicator color="#83AF23" /></View> : <ActionIcon icon="refresh" label="Refresh device" onPress={onRefresh} /> : <View style={{ width: 44 }} />}</View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#83AF23" /> : undefined}>
       {!!error && <Text accessibilityRole="alert" style={[styles.error, { marginBottom: 16 }]}>{error}</Text>}
-      <View style={styles.identity}><DeviceThumbnail device={device} size={64} /><View style={{ flex: 1 }}><Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.hardwareId}</Text><Text style={styles.time}>Last heard · {device.lastHeardDetail}</Text></View></View>
+      <View style={styles.identity}><DeviceThumbnail device={device} size={64} /><View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.hardwareId}</Text><Text style={styles.time}>Last heard · {device.lastHeardDetail}</Text></View></View>
       {device.deleted && <Text style={styles.archived}>Archived device · historical readings</Text>}
       {!!device.description && <Text style={styles.description}>{device.description}</Text>}
       <View style={liveStyles.card}><DetailRow label="Project" value={device.projectName} /><DetailRow label="Cluster" value={device.clusterName} />
         <DetailRow label="Location" value={device.location} /><DetailRow label="Hardware type" value={device.hardwareType} /></View>
       <Text accessibilityRole="header" style={styles.section}>Outputs · {device.readings.length}</Text>
-      {device.readings.length ? <View style={styles.grid}>{device.readings.map(reading => <View key={reading.id} style={styles.output}>
+      {device.readings.length ? <ResponsiveGrid minimumWidth={156} maximumColumns={4}>{device.readings.map(reading => <View key={reading.id} style={styles.output}>
         <View style={styles.outputHeader}><Text style={styles.outputTitle}>{reading.title}</Text><MaterialCommunityIcons name={reading.icon} size={22} color={reading.color ?? '#858585'} /></View>
         <Text selectable style={[styles.value, reading.color && { color: reading.color }]}>{reading.value}</Text>
         {!!reading.label && <Text style={styles.outputLabel}>{reading.label}</Text>}
         <Text selectable style={styles.outputId}>ID: {reading.id}</Text>
-      </View>)}</View> : <Text style={styles.description}>No outputs have been reported.</Text>}
+      </View>)}</ResponsiveGrid> : <Text style={styles.description}>No outputs have been reported.</Text>}
       <Text accessibilityRole="header" style={styles.section}>Attributes · {device.attributes?.length ?? 0}</Text>
       {device.attributes?.length ? <View style={liveStyles.card}>{device.attributes.map(attribute => <View key={attribute.id}><DetailRow label={attribute.name} value={attribute.value} /><Text selectable style={styles.attributeId}>ID: {attribute.id}</Text></View>)}</View>
         : <Text style={styles.description}>No attributes have been reported.</Text>}
@@ -59,11 +60,11 @@ const styles = StyleSheet.create({
   time: { color: '#999999', fontSize: 11, lineHeight: 18, marginTop: 5 }, description: { color: '#858585', fontSize: 14, lineHeight: 23, marginBottom: 16 },
   archived: { color: '#94621B', backgroundColor: '#FFF3D9', padding: 12, borderRadius: 8, marginBottom: 16 },
   section: { color: '#303030', fontSize: 17, fontWeight: '600', marginTop: 24, marginBottom: 14 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, output: { width: '48%', minWidth: 130, flexGrow: 1, backgroundColor: 'white', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#EEEEEE' },
+  output: { minWidth: 0, backgroundColor: 'white', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#EEEEEE' },
   outputHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 }, outputTitle: { flex: 1, color: '#555555', fontSize: 13, fontWeight: '600', lineHeight: 19 },
   value: { color: '#303030', fontSize: 21, fontWeight: '600', lineHeight: 29, marginTop: 20 }, outputLabel: { color: '#858585', fontSize: 12, lineHeight: 19, marginTop: 7 },
   outputId: { color: '#AAAAAA', fontSize: 9, lineHeight: 14, marginTop: 14 }, attributeId: { color: '#AAAAAA', fontSize: 9, marginTop: 3, marginBottom: 6 },
-  map: { height: 230, borderRadius: 8, overflow: 'hidden', marginTop: 12 }, mapLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-end', marginTop: 8 },
+  map: { height: 320, borderRadius: 8, overflow: 'hidden', marginTop: 12 }, mapLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-end', marginTop: 8 },
   linkText: { color: '#6D941B', fontSize: 14, fontWeight: '500' }, error: { color: '#B42318', fontSize: 13, lineHeight: 20 },
   technicalToggle: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { responsiveStyles } from '../../../layout/responsive';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabs } from '../../../components/BottomTabs';
@@ -9,10 +10,10 @@ export function ProfileScreen({ profile, organizationName, projectName, notice, 
   profile: Profile; organizationName: string; projectName?: string; notice: string;
   onEdit: () => void; onOrganizations: () => void; onProjects: () => void; onLogout: () => void; onDevices: () => void; onLocations: () => void; onAnalytics: () => void;
 }) {
-  return <SafeAreaView style={profileStyles.safe} edges={['top', 'bottom']}>
+  return <SafeAreaView style={profileStyles.safe} edges={['top', 'bottom', 'left', 'right']}>
     <View style={profileStyles.shell}>
       <View style={profileStyles.header}><Text accessibilityRole="header" style={profileStyles.title}>Profile</Text></View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, responsiveStyles.readable]}>
         <View style={styles.identity}>
           <ProfileAvatar firstName={profile.firstName} lastName={profile.lastName} variant={profile.avatarStyle} />
           <View style={styles.identityText}>

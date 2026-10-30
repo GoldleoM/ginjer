@@ -1,15 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ReadingIcon } from '../../devices/components/DeviceUI';
 import type { Device } from '../../devices/types';
 import { DeviceThumbnail } from '../../workspace/components/WorkspaceUI';
 
-export function LocationDeviceCard({ device, top, onDetails, onLayout }: {
-  device: Device; top: number; onDetails: () => void; onLayout: (height: number) => void;
+export function LocationDeviceCard({ device, top, maxHeight, onDetails, onLayout }: {
+  device: Device; top: number; maxHeight?: number; onDetails: () => void; onLayout: (height: number) => void;
 }) {
-  return <View accessibilityLabel={'Information for ' + device.name} style={[styles.card, { top }]}
+  return <View accessibilityLabel={'Information for ' + device.name} style={[styles.card, { top, maxHeight }]}
     onLayout={event => onLayout(event.nativeEvent.layout.height)}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.cardContent}>
     <View style={styles.header}>
       <DeviceThumbnail device={device} size={42} />
       <View style={styles.identity}><Text style={styles.name}>{device.name}</Text><Text selectable style={styles.deviceId}>{device.hardwareId}</Text></View>
@@ -23,11 +24,13 @@ export function LocationDeviceCard({ device, top, onDetails, onLayout }: {
         <MaterialCommunityIcons name="chevron-right" size={24} color="#303030" />
       </Pressable>
     </View>
+    </ScrollView>
   </View>;
 }
 const styles = StyleSheet.create({
-  card: { position: 'absolute', left: 12, right: 12, zIndex: 4, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 5, minHeight: 124,
+  card: { position: 'absolute', left: 12, right: 12, zIndex: 4, maxWidth: 520, overflow: 'hidden',
     backgroundColor: 'white', borderRadius: 9, shadowColor: '#000000', shadowOpacity: 0.13, shadowRadius: 8, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  cardContent: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 5, minHeight: 124 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   thumbnail: { width: 42, height: 42, borderWidth: 1, borderColor: '#EEEEEE', borderRadius: 4, overflow: 'hidden' },
   image: { width: '100%', height: '100%' },
@@ -39,7 +42,7 @@ const styles = StyleSheet.create({
   activityValue: { color: '#777777', fontSize: 10, lineHeight: 14, textAlign: 'right' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   readings: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  reading: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  readingText: { color: '#858585', fontSize: 11 },
+  reading: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%', minWidth: 0 },
+  readingText: { flexShrink: 1, color: '#858585', fontSize: 11 },
   details: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

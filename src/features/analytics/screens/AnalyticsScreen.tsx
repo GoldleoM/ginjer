@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ResponsiveGrid, responsiveStyles } from '../../../layout/responsive';
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,7 +37,7 @@ export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, on
     return () => subscription.remove();
   }, [expanded, onDevices]);
 
-  return <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+  return <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
     <View style={styles.shell}>
       <View style={styles.dashboardHeader}>
         <Pressable accessibilityRole="button" accessibilityLabel="Select analytics dashboard" accessibilityState={{ expanded, disabled: !options.length }}
@@ -60,16 +61,16 @@ export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, on
           <Text accessibilityRole="alert" style={styles.error}>{error}</Text>
           <Pressable accessibilityRole="button" onPress={() => setRetry(value => value + 1)} style={styles.retry}><Text style={styles.retryText}>Try again</Text></Pressable>
         </View> : dashboard?.id !== dashboardId ? <View style={styles.feedback}><ActivityIndicator accessibilityLabel="Loading dashboard" color={theme.colors.primary} /></View>
-          : dashboard.metrics.length ? dashboard.metrics.map(metric => <MetricCard key={metric.id} metric={metric} onInfo={() => setInfo(metric)} />)
+          : dashboard.metrics.length ? <ResponsiveGrid>{dashboard.metrics.map(metric => <MetricCard key={metric.id} metric={metric} onInfo={() => setInfo(metric)} />)}</ResponsiveGrid>
             : <View style={styles.feedback}><MaterialCommunityIcons name="chart-box-outline" size={38} color="#AAAAAA" /><Text style={styles.emptyTitle}>No readings yet</Text><Text style={styles.emptyText}>This dashboard has no metrics to display.</Text></View>}
       </ScrollView>
       <BottomTabs active="Analytics" onLocations={onLocations} onDevices={onDevices} onAnalytics={() => setExpanded(false)} onProfile={onProfile} />
       {expanded && <Pressable accessibilityRole="button" accessibilityLabel="Close dashboard selector" onPress={() => setExpanded(false)} style={styles.dropdownBackdrop} />}
     </View>
     <Modal visible={info !== null} transparent animationType="fade" onRequestClose={() => setInfo(null)}>
-      <View style={styles.modalBackdrop}>
+      <SafeAreaView style={styles.modalBackdrop}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close metric information" onPress={() => setInfo(null)} style={StyleSheet.absoluteFill} />
-        <View accessibilityViewIsModal style={styles.dialog}>
+        <View accessibilityViewIsModal style={styles.dialog}><ScrollView>
           <View style={styles.dialogHeader}><Text accessibilityRole="header" style={styles.dialogTitle}>{info?.title}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Close metric information" onPress={() => setInfo(null)} style={styles.close}><MaterialCommunityIcons name="close" size={24} color="#303030" /></Pressable>
           </View>
@@ -77,14 +78,14 @@ export function AnalyticsScreen({ repository, dashboardId, onDashboardChange, on
           <Text style={styles.description}>{info?.description}</Text>
           <Text selectable style={styles.detail}>Device: {info?.deviceId}</Text>
           <Text style={styles.detail}>Recorded: {info ? formatMetricTime(info.recordedAt) : ''} IST</Text>
-        </View>
-      </View>
+        </ScrollView></View>
+      </SafeAreaView>
     </Modal>
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F5F5' },
-  shell: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  shell: responsiveStyles.shell,
   dashboardHeader: { paddingHorizontal: 14, paddingTop: 16, paddingBottom: 16, zIndex: 3 },
   selector: { minHeight: 44, paddingHorizontal: 16, backgroundColor: 'white', borderRadius: 8, borderWidth: 1, borderColor: '#E8EEDC', flexDirection: 'row', alignItems: 'center', gap: 12,
     shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 },
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   emptyTitle: { color: '#303030', fontSize: 18, fontWeight: '600' },
   emptyText: { color: '#858585', textAlign: 'center', lineHeight: 22 },
   modalBackdrop: { flex: 1, backgroundColor: '#00000066', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  dialog: { width: '100%', maxWidth: 420, backgroundColor: 'white', padding: 20, borderRadius: 16 },
+  dialog: { width: '100%', maxWidth: 520, maxHeight: '100%', backgroundColor: 'white', padding: 20, borderRadius: 16 },
   dialogHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dialogTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: '#303030' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

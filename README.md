@@ -13,7 +13,9 @@ npm run web
 
 Use `npm start` for Expo Go, `npm run android` for Android, or `npm run ios` on macOS.
 
-Public configuration is documented in `.env.example`. The default API is `https://prodapi.ginjer.io/graphql`. Never put tokens, passwords, or private keys in Expo public environment variables.
+Public configuration is documented in `.env.example`. Copy it to `.env` to customize API hosts. Development builds (`npm start`, `npm run web`, Android/iOS development) use `EXPO_PUBLIC_DEV_API_BASE_URL`, defaulting to `https://devapi.ginjer.io`. Production builds/exports use `EXPO_PUBLIC_PROD_API_BASE_URL`, defaulting to `https://prodapi.ginjer.io`. The shared `API_BASE_URL` removes trailing slashes and appends `/graphql` for all API calls.
+
+Set `EXPO_PUBLIC_API_BASE_URL` to override the base URL in either build type. The existing `EXPO_PUBLIC_API_URL` full-endpoint override remains supported and takes precedence. Restart Expo after changing configuration; production changes require a new build/export. Never put tokens, passwords, or private keys in Expo public environment variables.
 
 ## Live application
 
@@ -58,6 +60,14 @@ Preview values and map positions are fixtures. They never replace failed or miss
 - `src/services/`: GraphQL transport and platform-aware session storage.
 - `tests/`: credential/profile validation, response mapping, authentication/transport behavior, and map geometry.
 - `assets/images/`: original design assets.
+
+## Responsive layouts
+
+The web app and native screens share layouts that respond to available width, orientation, safe-area insets, and native text scaling. Device and analytics lists use one to three columns; outputs use up to four. Profile forms stay within a readable width and use two columns where space permits. Tablet split-screen windows use their actual container width. Native builds support portrait and landscape.
+
+The sign-in form, list controls, map filters, and dialogs scroll when space is limited. Bottom navigation remains outside the screen's scrolling content. The web shell uses dynamic viewport height to follow mobile browser chrome and allows browser zoom.
+
+Layout regression tests cover widths from 240 to 1600 pixels, including common phone, iPad mini, iPad Air/Pro, Android tablet, landscape, and split-screen sizes, with text scaling up to 200%. These calculation tests do not replace browser or physical-device QA.
 
 ## Verification
 

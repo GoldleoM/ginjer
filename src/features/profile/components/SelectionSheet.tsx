@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useResponsiveLayout } from '../../../layout/responsive';
 import { AccessibilityInfo, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,11 +12,12 @@ export function SelectionSheet({ visible, title, items, selectedId, icon, onSele
   const [query, setQuery] = useState('');
 
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsiveLayout();
   useEffect(() => { if (visible) setQuery(''); }, [visible]);
   const filtered = items.filter(item => item.name.toLowerCase().includes(query.trim().toLowerCase()));
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}
     onShow={() => { AccessibilityInfo.announceForAccessibility(title); }}>
-    <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={[styles.overlay, { paddingTop: insets.top + 12, paddingLeft: insets.left + 12, paddingRight: insets.right + 12, paddingBottom: insets.bottom }, isTablet && { justifyContent: 'center' }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Pressable accessibilityRole="button" accessibilityLabel={'Close ' + title.toLowerCase() + ' picker'} onPress={onClose} style={StyleSheet.absoluteFill} />
       <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.searchRow}>
@@ -44,7 +46,7 @@ export function SelectionSheet({ visible, title, items, selectedId, icon, onSele
 }
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: '#00000099', justifyContent: 'flex-end' },
-  sheet: { width: '100%', maxWidth: 560, maxHeight: '70%', minHeight: 240, alignSelf: 'center', backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' },
+  sheet: { width: '100%', maxWidth: 560, height: '75%', maxHeight: 640, minHeight: 0, alignSelf: 'center', backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 18, paddingRight: 4, gap: 10 },
   search: { flex: 1, minWidth: 0, minHeight: 58, paddingVertical: 16, fontSize: 14, color: profileColors.text },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

@@ -46,10 +46,10 @@ export function ConnectedNavigator({ user, onExit, api = liveApi }: { user: Auth
             : tab === 'Analytics' ? <ConnectedAnalytics key={workspace.scope} workspace={workspace} onSelect={setDetail} onModules={() => { workspace.loadModules(); setModulesOpen(true); }} />
               : tab === 'Locations' ? <ConnectedLocations key={workspace.scope} workspace={workspace} onDetails={setDetail} onBackToDevices={() => setTab('Devices')} />
                 : <ConnectedDevices key={workspace.scope} workspace={workspace} onSelect={setDetail} />;
-  return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom']}><View style={liveStyles.shell}>
+  return <SafeAreaView style={liveStyles.safe} edges={['top', 'bottom', 'left', 'right']}><View style={liveStyles.shell}>
     <WorkspaceBar organization={workspace.account?.name} project={workspace.project?.name} busy={workspace.loading}
       onOrganizations={() => setPicker('organizations')} onProjects={() => setPicker('projects')} onInfo={() => setProjectInfo(true)} onRefresh={workspace.refresh} />
-    <View style={{ flex: 1 }}>{body}</View>
+    <View style={{ flex: 1, minHeight: 0, minWidth: 0 }}>{body}</View>
     <BottomTabs active={tab} onDevices={() => setTab('Devices')} onLocations={() => setTab('Locations')} onAnalytics={() => setTab('Analytics')} onProfile={() => setTab('Profile')} />
   </View>
     {picker === 'organizations' && <WorkspacePicker title="Organizations" selectedId={workspace.accountId}

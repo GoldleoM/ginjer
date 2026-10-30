@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import type { AuthUser } from '../features/auth/types';
 import { signOut } from '../features/auth/services/auth';
@@ -36,17 +36,17 @@ export default function App() {
       : user || preview ? <MainNavigator user={user} onExit={exitSession} preview={preview} />
         : <SignInScreen onSignedIn={setUser} onPreview={() => setPreview(true)} />}
     <Modal visible={busy || !!error} transparent animationType="fade" onRequestClose={() => { if (!busy) setError(''); }}>
-      <View style={styles.overlay}><View style={styles.feedback}>
+      <SafeAreaView style={styles.overlay}><View style={styles.feedback}><ScrollView contentContainerStyle={{ gap: 16 }}>
         {busy ? <><ActivityIndicator color="#83AF23" /><Text>Signing out…</Text></>
           : <><Text accessibilityRole="alert" style={styles.message}>{error}</Text><Pressable accessibilityRole="button" onPress={() => setError('')} style={styles.close}><Text style={styles.closeText}>Close</Text></Pressable></>}
-      </View></View>
+      </ScrollView></View></SafeAreaView>
     </Modal>
   </SafeAreaProvider>;
 }
 const styles = StyleSheet.create({
   starting: { flex: 1, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', gap: 16 }, startingText: { color: '#858585', fontSize: 14 },
   overlay: { flex: 1, backgroundColor: '#00000055', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  feedback: { width: '100%', maxWidth: 360, padding: 24, borderRadius: 16, backgroundColor: 'white', gap: 16 },
+  feedback: { width: '100%', maxWidth: 420, maxHeight: '100%', padding: 24, borderRadius: 16, backgroundColor: 'white', gap: 16 },
   message: { color: '#303030', fontSize: 15, lineHeight: 23 }, close: { alignSelf: 'flex-end', minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
   closeText: { color: '#6D941B', fontWeight: '600' },
 });

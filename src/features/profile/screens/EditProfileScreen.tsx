@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { responsiveStyles, ResponsiveGrid } from '../../../layout/responsive';
 import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,7 +56,7 @@ export function EditProfileScreen({ profile, organizations, onSave, onBack }: {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save your profile. Please try again.'); }
     finally { saving.current = false; setBusy(false); }
   }
-  return <SafeAreaView style={[profileStyles.safe, styles.white]} edges={['top', 'bottom']}>
+  return <SafeAreaView style={[profileStyles.safe, styles.white]} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView style={profileStyles.shell} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={profileStyles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back to profile, discard unsaved changes" disabled={busy} onPress={onBack} style={profileStyles.iconButton}><MaterialCommunityIcons name="arrow-left" size={23} color={profileColors.text} /></Pressable>
@@ -64,9 +65,9 @@ export function EditProfileScreen({ profile, organizations, onSave, onBack }: {
           {busy ? <ActivityIndicator color={profileColors.green} /> : <MaterialCommunityIcons name="check" size={24} color={profileColors.text} />}
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+      <ScrollView contentContainerStyle={[styles.content, responsiveStyles.readable]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.avatar}><ProfileAvatar firstName={draft.firstName} lastName={draft.lastName} variant={draft.avatarStyle} onEdit={busy ? undefined : () => setSheet('avatar')} /></View>
-        <View style={styles.fields}>
+        <ResponsiveGrid minimumWidth={280} gap={23} maximumColumns={2}>
           <ProfileField inputRef={firstNameRef} label="First Name" icon="account-outline" value={draft.firstName} onChangeText={value => change('firstName', value)}
             error={errors.firstName} editable={!busy} autoComplete="given-name" textContentType="givenName" autoCapitalize="words" returnKeyType="next"
             onSubmitEditing={() => lastNameRef.current?.focus()} />
@@ -88,7 +89,7 @@ export function EditProfileScreen({ profile, organizations, onSave, onBack }: {
             <Text style={styles.organizationName}>{organizations.find(item => item.id === draft.organizationId)?.name}</Text>
             <MaterialCommunityIcons name="chevron-down" size={21} color={profileColors.muted} />
           </Pressable>
-        </View>
+        </ResponsiveGrid>
         {!!error && <Text accessibilityRole="alert" style={profileStyles.error}>{error}</Text>}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -103,7 +104,6 @@ const styles = StyleSheet.create({
   white: { backgroundColor: 'white' },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   avatar: { alignItems: 'center', marginTop: 20, marginBottom: 38 },
-  fields: { gap: 23 },
   organization: { minHeight: 58, borderWidth: 1, borderColor: '#9B98A5', borderRadius: 8, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 12 },
   organizationLabel: { position: 'absolute', left: 12, top: -9, paddingHorizontal: 4, fontSize: 11, backgroundColor: 'white', color: profileColors.green },
   organizationName: { flex: 1, fontSize: 15, color: profileColors.text, paddingVertical: 17 },

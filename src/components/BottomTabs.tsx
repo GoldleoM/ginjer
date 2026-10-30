@@ -1,4 +1,5 @@
 import React, { type ComponentProps } from 'react';
+import { useResponsiveLayout } from '../layout/responsive';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme';
@@ -14,6 +15,7 @@ const tabs: { label: Tab; icon: ComponentProps<typeof MaterialCommunityIcons>['n
 export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProfile }: {
   active: Tab; onDevices: () => void; onLocations: () => void; onAnalytics: () => void; onProfile: () => void;
 }) {
+  const { isTablet } = useResponsiveLayout();
   const actions: Record<Tab, () => void> = { Devices: onDevices, Locations: onLocations, Analytics: onAnalytics, Profile: onProfile };
   return <View accessibilityRole="tablist" style={styles.tabs}>
     {tabs.map(tab => {
@@ -21,15 +23,15 @@ export function BottomTabs({ active, onDevices, onLocations, onAnalytics, onProf
       const color = selected ? theme.colors.primary : '#AAAAAA';
       return <Pressable key={tab.label} accessibilityRole="tab" accessibilityLabel={tab.label}
         accessibilityState={{ selected }} onPress={actions[tab.label]}
-        style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}>
+        style={({ pressed }) => [styles.tab, isTablet && { flexDirection: 'row', gap: 10 }, pressed && { opacity: 0.6 }]}>
         <MaterialCommunityIcons name={tab.icon} size={23} color={color} />
-        <Text style={[styles.label, { color }]}>{tab.label}</Text>
+        <Text style={[styles.label, isTablet && { fontSize: 14 }, { color }]}>{tab.label}</Text>
       </Pressable>;
     })}
   </View>;
 }
 const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', backgroundColor: 'white', paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#EEEEEE' },
-  tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  label: { fontSize: 11 },
+  tab: { flex: 1, minWidth: 0, paddingHorizontal: 4, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  label: { fontSize: 11, flexShrink: 1, textAlign: 'center' },
 });

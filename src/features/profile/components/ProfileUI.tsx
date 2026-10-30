@@ -1,4 +1,5 @@
 import React, { type ComponentProps, type Ref } from 'react';
+import { responsiveStyles } from '../../../layout/responsive';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../../../theme';
@@ -47,7 +48,7 @@ export function ProfileMenuRow({ icon, label, onPress, destructive = false, last
 }
 export const profileStyles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F8F8' },
-  shell: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  shell: responsiveStyles.shell,
   header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6 },
   title: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: profileColors.text },
 
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   initials: { color: '#6D941B', fontSize: 26, fontWeight: '600' },
   editAvatar: { position: 'absolute', right: -12, bottom: -12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   editBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: profileColors.green, borderWidth: 2, borderColor: 'white', alignItems: 'center', justifyContent: 'center' },
-  fieldGroup: { gap: 5 },
+  fieldGroup: { minWidth: 0, gap: 5 },
   field: { minHeight: 58, borderWidth: 1, borderColor: '#9B98A5', borderRadius: 8, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'white' },
   fieldLabel: { position: 'absolute', left: 12, top: -9, paddingHorizontal: 4, fontSize: 11, backgroundColor: 'white', color: profileColors.green },
   input: { flex: 1, minWidth: 0, fontSize: 15, color: profileColors.text, paddingVertical: 17 },
@@ -70,5 +71,5 @@ const styles = StyleSheet.create({
   error: { color: profileColors.error, fontSize: 12, flex: 1 },
   menuRow: { minHeight: 58, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 12 },
   menuBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#EEEEEE' },
-  menuText: { flex: 1, fontSize: 15, lineHeight: 21 },
+  menuText: { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 21 },
 });

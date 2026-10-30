@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useResponsiveLayout } from '../../../layout/responsive';
 import {
   ActivityIndicator,
   Image,
@@ -14,7 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { OutlinedInput } from "../../../components/OutlinedInput";
-import { theme } from "../../../theme";
+import { theme  } from "../../../theme";
 import { signIn } from "../services/auth";
 import { validateCredentials } from "../services/validation";
 import type { AuthUser } from "../types";
@@ -25,6 +26,7 @@ export function SignInScreen({
   onSignedIn: (user: AuthUser) => void;
   onPreview: () => void;
 }) {
+  const { isTablet, isShort } = useResponsiveLayout();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
@@ -52,34 +54,37 @@ export function SignInScreen({
     }
   }
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView
         style={styles.safe}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          style={{ flex: 1, minHeight: 0 }}
+          contentContainerStyle={[styles.content, isTablet && styles.tabletContent, isShort && { paddingVertical: 20 }]}
           keyboardShouldPersistTaps='handled'
           automaticallyAdjustKeyboardInsets
         >
-          <View style={styles.brand}>
+          <View style={[styles.intro, isTablet && styles.tabletColumn]}>
+            <View style={styles.brand}>
+              <Image
+                source={require("../../../../assets/images/ginjer-logo.png")}
+                style={styles.logo}
+                resizeMode='contain'
+                accessibilityLabel='Ginjer, powered by SenRa'
+              />
+              <Text style={styles.tagline}>
+                A new way to Sense, Control and Automate
+              </Text>
+            </View>
             <Image
-              source={require("../../../../assets/images/ginjer-logo.png")}
-              style={styles.logo}
+              source={require("../../../../assets/images/sign-in-illustration.png")}
+              style={[styles.illustration, isTablet && { width: 260 }, isShort && { width: 120 }]}
               resizeMode='contain'
-              accessibilityLabel='Ginjer, powered by SenRa'
+              accessible={false}
             />
-            <Text style={styles.tagline}>
-              A new way to Sense, Control and Automate
-            </Text>
           </View>
-          <Image
-            source={require("../../../../assets/images/sign-in-illustration.png")}
-            style={styles.illustration}
-            resizeMode='contain'
-            accessible={false}
-          />
-          <View style={styles.form}>
+          <View style={[styles.form, isTablet && styles.tabletColumn]}>
             <OutlinedInput
               label='Email ID*'
               value={email}
@@ -158,8 +163,8 @@ export function SignInScreen({
             >
               <Text style={styles.previewText}>Preview sample screens</Text>
             </Pressable>
+            <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>
           </View>
-          <Text style={styles.legal}>Use your Ginjer account to access your organizations and projects.</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -170,15 +175,19 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 480,
+    maxWidth: 1120,
     alignSelf: "center",
-    paddingHorizontal: 16,
-    paddingTop: 36,
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 28,
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 28,
   },
-  brand: { alignItems: "center" },
-  logo: { width: 190, height: 78 },
+  tabletContent: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingHorizontal: 32 },
+  intro: { alignItems: 'center', width: '100%', maxWidth: 440, alignSelf: 'center' },
+  tabletColumn: { flex: 1, minWidth: 0 },
+  brand: { alignItems: "center", width: '100%' },
+  logo: { width: 190, maxWidth: '100%', height: 78 },
   tagline: {
     color: theme.colors.muted,
     fontSize: 13,
@@ -187,12 +196,11 @@ const styles = StyleSheet.create({
   },
   illustration: {
     width: 180,
-    height: 175,
+    aspectRatio: 180 / 175,
     alignSelf: "center",
-    marginTop: 30,
-    marginBottom: 32,
+    marginTop: 24,
   },
-  form: { gap: 22 },
+  form: { gap: 22, width: '100%', maxWidth: 440, alignSelf: 'center' },
   eye: {
     minWidth: 44,
     minHeight: 44,
@@ -220,8 +228,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: "center",
-    marginTop: 56,
-    paddingHorizontal: 24,
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   link: { color: "#78A51A", fontWeight: "600" },
 });
