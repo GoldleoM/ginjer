@@ -35,7 +35,7 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
   const [networkKeyId, setNetworkKeyId] = useState('');
   const [changeKey, setChangeKey] = useState(false);
   const [sending, setSending] = useState(false);
-  const [attempted, setAttempted] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<DownlinkResult>();
   const submitting = useRef(false);
@@ -52,21 +52,26 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [api, device.id, device.organizationId, device.hardwareId, device.networkId, revision]);
+  function editDraft(update: () => void) {
+    if (submitting.current) return;
+    setError(''); setResult(undefined);
+    update();
+  }
   async function send() {
-    if (submitting.current || attempted || !options) return;
-    setError('');
+    if (submitting.current || !options) return;
+    setError(''); setResult(undefined);
     let command: DownlinkDraft;
     try {
       command = { interfaceId, value: controllerValue(value), port: Number(port), deviceClass, networkKeyId };
       downlinkAction(device, command, options);
     } catch (error) { setError(error instanceof Error ? error.message : 'Check the command fields.'); return; }
-    submitting.current = true; setSending(true); setAttempted(true);
+    submitting.current = true; setSending(true); setHasSubmitted(true);
     try { const response = await api.send(device, command, options); if (mounted.current) { setResult(response); onSent?.(); } }
     catch (error) { if (mounted.current) setError((error instanceof Error ? error.message : 'Unable to confirm the result.') + ' Check device logs before sending again.'); }
     finally { submitting.current = false; if (mounted.current) setSending(false); }
   }
   const close = () => { if (!submitting.current) { Keyboard.dismiss(); onClose(); } };
-  const disabled = loading || !!loadError || sending || attempted || device.deleted || !interfaceId || !value.trim() || !networkKeyId || !port.trim();
+  const disabled = loading || !!loadError || sending || device.deleted || !interfaceId || !value.trim() || !networkKeyId || !port.trim();
   return <Modal visible transparent animationType="slide" onRequestClose={close}>
     {/* Android Modal already resizes for the keyboard. Avoid measuring the loading
         sheet as an initial height and subtracting the keyboard from it again. */}
@@ -82,15 +87,15 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
         </View>
         <View style={styles.content}>
           {device.deleted ? <Feedback title="Device archived" message="Commands are available for current devices." /> : loading ? <Feedback busy /> : loadError ? <Feedback title="Unable to load controllers" message={loadError} onRetry={() => setRevision(current => current + 1)} /> : !options?.interfaces.length ? <Feedback title="No downlink controllers" message="No supported controllers are available for this device." /> : <>
-            <SelectField label="Downlink Controller" items={options.interfaces} value={interfaceId} onChange={id => { setInterfaceId(id); setValue(''); }} disabled={attempted} />
-            <View style={styles.field}><Text style={styles.label}>Controller Value</Text><TextInput accessibilityLabel="Controller Value" autoCapitalize="none" autoCorrect={false} editable={!attempted} value={value} onChangeText={setValue} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => portInput.current?.focus()} style={styles.input} /></View>
+            <SelectField label="Downlink Controller" items={options.interfaces} value={interfaceId} onChange={id => editDraft(() => { setInterfaceId(id); setValue(''); })} disabled={sending} />
+            <View style={styles.field}><Text style={styles.label}>Controller Value</Text><TextInput accessibilityLabel="Controller Value" autoCapitalize="none" autoCorrect={false} editable={!sending} value={value} onChangeText={next => editDraft(() => setValue(next))} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => portInput.current?.focus()} style={styles.input} /></View>
             <View style={styles.row}>
-              <View style={styles.column}><View style={styles.field}><Text style={styles.label}>Downlink Port</Text><TextInput ref={portInput} accessibilityLabel="Downlink Port" keyboardType="number-pad" editable={!attempted} value={port} onChangeText={setPort} returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} style={styles.input} /></View></View>
-              <View style={styles.column}><SelectField label="Class" items={classes} value={deviceClass} onChange={id => setDeviceClass(id as NonNullable<DownlinkDraft['deviceClass']>)} disabled={attempted} /></View>
+              <View style={styles.column}><View style={styles.field}><Text style={styles.label}>Downlink Port</Text><TextInput ref={portInput} accessibilityLabel="Downlink Port" keyboardType="number-pad" editable={!sending} value={port} onChangeText={next => editDraft(() => setPort(next))} returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} style={styles.input} /></View></View>
+              <View style={styles.column}><SelectField label="Class" items={classes} value={deviceClass} onChange={id => editDraft(() => setDeviceClass(id as NonNullable<DownlinkDraft['deviceClass']>))} disabled={sending} /></View>
             </View>
-            {changeKey ? <SelectField label="Downlink Key" items={options.networkKeys || []} value={networkKeyId} onChange={id => { setNetworkKeyId(id); setChangeKey(false); }} disabled={attempted} /> : <View style={styles.keyRow}>
+            {changeKey ? <SelectField label="Downlink Key" items={options.networkKeys || []} value={networkKeyId} onChange={id => editDraft(() => { setNetworkKeyId(id); setChangeKey(false); })} disabled={sending} /> : <View style={styles.keyRow}>
               <Text style={styles.keyText}>Downlink Key: {options.networkKeys?.find(key => key.id === networkKeyId)?.name || 'Not available'}</Text>
-              {!!options.networkKeys?.length && <Pressable accessibilityRole="button" accessibilityLabel="Change downlink key" disabled={attempted} onPress={() => setChangeKey(true)} style={styles.changeKey}><Text style={styles.link}>change</Text></Pressable>}
+              {!!options.networkKeys?.length && <Pressable accessibilityRole="button" accessibilityLabel="Change downlink key" disabled={sending} onPress={() => { Keyboard.dismiss(); setChangeKey(true); }} style={styles.changeKey}><Text style={styles.link}>change</Text></Pressable>}
             </View>}
             {!options.networkKeys?.length && <Text style={styles.error}>No downlink key is available for this device's network.</Text>}
           </>}
@@ -102,7 +107,7 @@ export function DownlinkSheet({ device, onClose, onSent, api = liveApi }: { devi
           </View>}
         </View>
         </ScrollView>
-        <View style={styles.footer}><Pressable accessibilityRole="button" disabled={sending} onPress={close} style={styles.cancel}><Text style={styles.link}>{attempted ? 'Close' : 'Cancel'}</Text></Pressable>
+        <View style={styles.footer}><Pressable accessibilityRole="button" disabled={sending} onPress={close} style={styles.cancel}><Text style={styles.link}>{hasSubmitted ? 'Close' : 'Cancel'}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={'Send command to ' + device.name} disabled={!!disabled} accessibilityState={{ disabled: !!disabled, busy: sending }} onPress={send} style={[styles.send, disabled && { opacity: 0.45 }]}>{sending ? <ActivityIndicator color="white" /> : <Text style={styles.sendText}>Send</Text>}</Pressable></View>
       </View>
     </SafeAreaView>

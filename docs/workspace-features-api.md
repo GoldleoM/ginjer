@@ -51,6 +51,8 @@ The action includes `organisationId`, `deviceId`, `downlinkInterfaceId`, plain-t
 
 The UI matches the official website: controller dropdown, controller value text field, port, class, and key selector. It does not require JSON or execute controller source code. Saved-command selection is not shown.
 
+Fields and Send are locked only while a request is in progress. Once it finishes (accepted, failed, or unconfirmed), the current values remain editable and another explicit Send is allowed without reopening the sheet. Editing clears the previous result/error so it cannot be mistaken for the new draft's outcome. Intercepted browser checks cover a second command with changed values, recovery after errors/unconfirmed responses, pending-request duplicate protection, validation, and Enter handling; no live commands were sent.
+
 The downlink modal relies on Android's native resize behavior and uses an outer, full-height keyboard-avoiding container only on iOS. The dynamically loaded sheet no longer uses height-based keyboard adjustment. Its introduction and fields scroll together while Cancel/Send remain outside the scroll area. Enter advances from Controller Value to Port; Done blurs the port and dismisses the keyboard. Neither action sends a command, and opening selectors dismisses the keyboard.
 
 Keyboard regression checks: delayed controller loading, repeated Next/Done actions, preserved input values, class selection, and shrinking/restoring the viewport passed at 320, 390, 667, and 768px widths using intercepted browser fixtures; no command requests were made. All 100 existing tests, typecheck, and Android/iOS/web exports passed. No Android device was attached for a physical Expo Go keyboard test during this fix.
