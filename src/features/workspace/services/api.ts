@@ -4,7 +4,7 @@ import { normalizeAccounts, normalizeDevices, normalizeModules, normalizeProject
 import { fetchMemberships } from './memberships';
 
 const PROJECTS = 'query ProjectList($params: ParamInput!) { projectOverview(params: $params) { _id name description active organisationId location { placeName lat lng } userCount { _id userCount } deviceCount { _id deviceCount } clusterCount { _id clusterCount } nonLoRaWANDeviceCount { _id nonLoRaWANDeviceCount } } }';
-const DEVICES = 'query DeviceDetails($params: ParamInput!) { projects(params: $params) { _id name clusters { _id name devices { _id name description devEui organisationId projectId clusterId hardwareId networkId hardwareType mainOutputId networkInterface timestamp deleted position { placeName lat lng } outputs { outputId outputModuleType outputName value label color } attributes { attributeId attributeName value } } } } }';
+const DEVICES = 'query DeviceDetails($params: ParamInput!) { projects(params: $params) { _id name clusters { _id name devices { _id name description devEui organisationId projectId clusterId hardwareId networkId networkKeyId hardwareType mainOutputId networkInterface timestamp deleted position { placeName lat lng } outputs { outputId outputModuleType outputName value label color } attributes { attributeId attributeName value } } } } }';
 const MODULES = 'query ModuleList($params: ParamInput!) { modules(params: $params) { _id label moduleType organisationId } }';
 const HARDWARE_IMAGES = 'query DeviceImages($params: ParamInput!) { hardwareList(params: $params) { _id organisationId deleted image { location } } }';
 export function createWorkspaceApi(request: ApiRequest): WorkspaceApi {

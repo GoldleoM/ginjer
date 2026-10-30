@@ -25,6 +25,7 @@ export interface Device {
   description?: string;
   devEui?: string;
   networkId?: string;
+  networkKeyId?: string;
   hardwareType?: string;
   organizationId?: string;
   projectId?: string;

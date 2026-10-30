@@ -10,7 +10,7 @@
 - Analytics from actual current readings and attributes, plus a searchable module catalog.
 - Real-coordinate maps with pan/zoom, fit, overlapping-device selection, and missing-coordinate lists.
 - Compact/expanded device lists, name/last-heard sorting, and device-ID search.
-- Downlink bottom sheet from device details and map cards: hardware-bound interfaces, saved command selection, validated custom JSON, optional port, animated sending status, and the actual server response. One saved command can be sent in two taps from device details. No command is sent merely by opening the panel.
+- Downlink form from device details and map cards: controller, plain-text value, port, class, and network-key selection. No command is sent merely by opening the panel.
 - In-app notification banners and a searchable, status-filtered notification panel with scope-safe device routing. Polling refreshes the selected project every minute while the app is active.
 - Automation summary, searchable rules, conditions, linked devices, configured command steps, and paginated run history. Rule configuration and execution remain read only.
 - Device health panel with configurable 1-hour, 24-hour, or 7-day last-heard windows; unknown timestamps, red readings, missing outputs, and missing location checks. These are data-quality/activity indicators, not proof that a device is online or offline.
@@ -20,7 +20,7 @@
 
 ## Needs additional backend support
 
-1. Device-specific downlink form schemas and graphics. The API exposes controller IDs/code and saved values, but no field definitions for the reference Valve/Value dropdowns. Custom values therefore require an exact JSON payload supplied by a knowledgeable user; controller code is never executed by the app.
+1. Optional device-specific downlink graphics and typed form schemas. The current form matches the official website plain-text controller value; no JSON editor is required.
 2. Configured web dashboards, custom analytics widgets, cross-page history aggregation, and digital-twin assets/state mappings.
 3. Automation creation/editing/manual runs, notification acknowledgement, and system push notifications. Existing rules and notifications are available in the app; no automation or alert status is modified during inspection.
 4. Phone/avatar editing and a user-initiated organization-join request flow. No administrator invitation is issued automatically.

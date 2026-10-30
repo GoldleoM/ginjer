@@ -88,7 +88,7 @@ export function normalizeDevices(value: unknown, now = Date.now()): Device[] {
           location: text(record(data.position).placeName, 'Not reported'), coordinates: position,
           mainOutputId: text(data.mainOutputId) || undefined, networkInterface: text(data.networkInterface) || undefined,
           mainOutput: data.mainOutputId ? readings.find(reading => reading.id === text(data.mainOutputId))?.title ?? 'Not reported' : readings[0]?.title ?? 'No outputs', recent: age >= 0 && age <= 86400000, needsAttention: readings.some(item => item.tone === 'red'),
-          readings, description: text(data.description), devEui: text(data.devEui), networkId: text(data.networkId),
+          readings, description: text(data.description), devEui: text(data.devEui), networkKeyId: text(data.networkKeyId) || undefined, networkId: text(data.networkId),
           hardwareType: text(data.hardwareType), organizationId: text(data.organisationId), projectId: text(data.projectId, text(project._id)),
           clusterId: text(data.clusterId, text(cluster._id)), projectName: text(project.name), clusterName: text(cluster.name),
           deleted: data.deleted === true,

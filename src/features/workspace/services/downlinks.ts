@@ -3,8 +3,8 @@ import type { Device } from '../../devices/types';
 
 export interface DownlinkInterface { id: string; name: string; }
 export interface SavedCommand { id: string; name: string; interfaceId: string; value: Record<string, unknown>; port: number; deviceClass: 'CLASS_A' | 'CLASS_B' | 'CLASS_C'; networkKeyId: string; }
-export interface DownlinkOptions { deviceId: string; organisationId: string; hardwareId: string; interfaces: DownlinkInterface[]; commands: SavedCommand[]; warnings: string[]; }
-export interface DownlinkDraft { interfaceId: string; value: Record<string, unknown>; port?: number; deviceClass?: 'CLASS_A' | 'CLASS_B' | 'CLASS_C'; networkKeyId?: string; }
+export interface DownlinkOptions { deviceId: string; organisationId: string; hardwareId: string; interfaces: DownlinkInterface[]; networkKeys?: { id: string; name: string }[]; defaultNetworkKeyId?: string; commands: SavedCommand[]; warnings: string[]; }
+export interface DownlinkDraft { interfaceId: string; value: string | Record<string, unknown>; port?: number; deviceClass?: 'CLASS_A' | 'CLASS_B' | 'CLASS_C'; networkKeyId?: string; }
 export interface DownlinkResult { type: string; message: string; timestamp?: string; }
 export interface DownlinkApi {
   options(device: Device, signal?: AbortSignal): Promise<DownlinkOptions>;
@@ -20,6 +20,18 @@ export function parseCommandValue(raw: string): Record<string, unknown> {
   catch { throw new Error('Enter a valid JSON object with finite numeric values for this interface.'); }
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('Command value must be a JSON object.');
   return value as Record<string, unknown>;
+}
+// The official web form sends this field as a string, not a JSON object.
+export function controllerValue(raw: string): string {
+  if (!raw.trim()) throw new Error('Enter a controller value.');
+  if (raw.length > 32768) throw new Error('Controller value must be smaller than 32 KB.');
+  return raw;
+}
+export function networkDownlinkKeys(device: Device, networks: unknown) {
+  const network = arr(networks).map(obj).find(row => row._id === device.networkId && (!row.organisationId || row.organisationId === device.organizationId) && row.deleted !== true);
+  const networkKeys = arr(obj(obj(network?.configuration).httpOptions).networkKeys).map(obj)
+    .filter(row => !!str(row._id)).map(row => ({ id: str(row._id), name: str(row.name) || 'Downlink key' }));
+  return { networkKeys, defaultNetworkKeyId: networkKeys.find(key => key.id === device.networkKeyId)?.id || networkKeys[0]?.id };
 }
 export function normalizeDownlinks(device: Device, hardware: unknown, modules: unknown, favorites: unknown): DownlinkOptions {
   const match = arr(hardware).map(obj).find(row => row._id === device.hardwareId && (!row.organisationId || row.organisationId === device.organizationId) && row.deleted !== true);
@@ -44,7 +56,8 @@ export function downlinkAction(device: Device, draft: DownlinkDraft, options: Do
   if (device.source !== 'live' || device.deleted || !device.id || !device.organizationId || !device.projectId) throw new Error('Select a current device before sending a command.');
   if (options.deviceId !== device.id || options.organisationId !== device.organizationId || options.hardwareId !== device.hardwareId) throw new Error('Command options belong to a different device. Reopen the command panel.');
   if (!options.interfaces.some(item => item.id === draft.interfaceId)) throw new Error('Choose an interface supported by this hardware.');
-  const value = parseCommandValue(JSON.stringify(draft.value));
+  const value = typeof draft.value === 'string' ? controllerValue(draft.value) : parseCommandValue(JSON.stringify(draft.value));
+  if (options.networkKeys && (!draft.networkKeyId || !options.networkKeys.some(key => key.id === draft.networkKeyId))) throw new Error('Choose a downlink key for this device network.');
   if (draft.port !== undefined && (!Number.isInteger(draft.port) || draft.port < 1 || draft.port > 223)) throw new Error('Port must be a whole number from 1 to 223.');
   if (draft.deviceClass !== undefined && !['CLASS_A', 'CLASS_B', 'CLASS_C'].includes(draft.deviceClass)) throw new Error('Choose a valid device class.');
   return { organisationId: device.organizationId, deviceId: device.id, downlinkInterfaceId: draft.interfaceId, value,
@@ -53,22 +66,23 @@ export function downlinkAction(device: Device, draft: DownlinkDraft, options: Do
 export const DOWNLINK_HARDWARE_QUERY = 'query DownlinkHardware($params: ParamInput!) { hardwareList(params: $params) { _id organisationId deleted loRaWANConfiguration { controllers { moduleId } } } }';
 export const DOWNLINK_MODULES_QUERY = 'query DownlinkModules($params: ParamInput!) { modules(params: $params) { _id label moduleType organisationId } }';
 export const SAVED_COMMANDS_QUERY = 'query SavedCommands($params: FavoriteDownlinkParamsInput!) { getFavoriteDownlinks(favoriteDownlinkParamsInput: $params) { _id name deviceId organisationId downlinkInterfaceId port class value networkKeyId } }';
+export const DOWNLINK_NETWORKS_QUERY = 'query DownlinkNetworks($params: ParamInput!) { networkList(params: $params) { _id organisationId deleted configuration { httpOptions { networkKeys { _id name } } } } }';
 export const SEND_DOWNLINK_QUERY = 'query SendDownlink($action: SendDownlinkInput!) { sendDownlink(action: $action) { timestamp type message } }';
 export function createDownlinkApi(request: ApiRequest): DownlinkApi {
   return {
     async options(device, signal) {
       if (!device.organizationId || !device.id || !device.hardwareId || device.source !== 'live') throw new Error('Device identifiers are unavailable.');
       const params = { organisationId: device.organizationId };
-      const [hardware, modules, saved] = await Promise.allSettled([
+      const [hardware, modules, networks] = await Promise.allSettled([
         request<{ hardwareList: unknown }>(DOWNLINK_HARDWARE_QUERY, { params }, signal),
         request<{ modules: unknown }>(DOWNLINK_MODULES_QUERY, { params }, signal),
-        request<{ getFavoriteDownlinks: unknown }>(SAVED_COMMANDS_QUERY, { params: { deviceId: device.id } }, signal),
+        request<{ networkList: unknown }>(DOWNLINK_NETWORKS_QUERY, { params }, signal),
       ]);
       if (hardware.status === 'rejected') throw hardware.reason;
       if (modules.status === 'rejected') throw modules.reason;
-      const options = normalizeDownlinks(device, hardware.value.hardwareList, modules.value.modules, saved.status === 'fulfilled' ? saved.value.getFavoriteDownlinks : []);
-      if (saved.status === 'rejected') options.warnings.push('Saved commands could not be loaded. Close and reopen this panel to retry.');
-      return options;
+      if (networks.status === 'rejected') throw networks.reason;
+      const options = normalizeDownlinks(device, hardware.value.hardwareList, modules.value.modules, []);
+      return { ...options, ...networkDownlinkKeys(device, networks.value.networkList) };
     },
     async send(device, draft, options) {
       const data = await request<{ sendDownlink: unknown }>(SEND_DOWNLINK_QUERY, { action: downlinkAction(device, draft, options) });

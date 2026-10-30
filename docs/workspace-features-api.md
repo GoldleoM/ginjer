@@ -16,9 +16,9 @@ Discovery combines:
 
 - `hardwareList(params: { organisationId })`: the device's exact hardware, its ownership/deleted state, and `loRaWANConfiguration.controllers.moduleId`.
 - `modules(params: { organisationId })`: labels for compatible `DOWNLINK_INTERFACE` IDs only; shared and current-organization modules are accepted.
-- `getFavoriteDownlinks(favoriteDownlinkParamsInput: { deviceId })`: exact device/organization-matched saved commands, with interface ID, JSON-encoded `value`, port, device class, and network-key identifier. The network key itself is neither requested nor exposed.
+- `networkList(params: { organisationId })`: match the device network and read `configuration.httpOptions.networkKeys { _id name }`. Secret key material is never requested.
 
-Saved values are parsed as JSON objects. Classes are the actual API enum values `CLASS_A`, `CLASS_B`, and `CLASS_C`; ports must be integers from 1 to 223. Malformed or foreign commands are excluded. Discovery requests never submit commands and never retrieve or evaluate controller source code.
+The form sends the controller value as plain text, matching the official web implementation. The default port is 1 and default class is C. Classes are the actual API enum values `CLASS_A`, `CLASS_B`, and `CLASS_C`; ports must be integers from 1 to 223. Key choices are restricted to the device network and organization. Discovery requests never submit commands and never retrieve or evaluate controller source code.
 
 The send operation is a **GraphQL query with side effects**, as specified by Postman:
 
@@ -28,9 +28,9 @@ query SendDownlink($action: SendDownlinkInput!) {
 }
 ```
 
-The action includes `organisationId`, `deviceId`, `downlinkInterfaceId`, and the JSON object `value`. Saved commands retain their port, class, and network-key ID; custom commands optionally specify a port and otherwise use the interface defaults. Options must match the current device, organization, and hardware before sending. Archived/demo devices cannot send. There are no automatic retries. The sheet blocks repeated taps and further submissions after a request; ambiguous network outcomes direct users to inspect logs before trying again. The response message is shown verbatim as a server response, never treated as proof of physical delivery.
+The action includes `organisationId`, `deviceId`, `downlinkInterfaceId`, plain-text `value`, `port`, `class`, and `networkKeyId`. Options must match the current device, organization, and hardware before sending. Archived/demo devices cannot send. There are no automatic retries. The sheet blocks duplicate submissions; ambiguous outcomes direct users to inspect logs. A response is not proof of physical delivery.
 
-The API has no form schema for the reference Valve/Value dropdowns. The UI uses exact saved commands or an explicitly labeled custom JSON editor; it does not invent keys or enum values. Animated cloud feedback indicates an in-progress API request, not a simulated physical device state.
+The UI matches the official website: controller dropdown, controller value text field, port, class, and key selector. It does not require JSON or execute controller source code. Saved-command selection is not shown.
 
 ## Account creation and profile names
 
