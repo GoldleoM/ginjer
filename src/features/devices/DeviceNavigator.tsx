@@ -4,7 +4,7 @@ import { DeviceDetailsScreen } from './screens/DeviceDetailsScreen';
 import { DeviceListScreen } from './screens/DeviceListScreen';
 import type { Device } from './types';
 
-export function DeviceNavigator({ onExit, preview, onProfile }: { onExit: () => void; preview: boolean; onProfile: () => void }) {
+export function DeviceNavigator({ onExit, preview, onProfile, onAnalytics }: { onExit: () => void; preview: boolean; onProfile: () => void; onAnalytics: () => void }) {
   const [selected, setSelected] = useState<Device | null>(null);
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -13,5 +13,5 @@ export function DeviceNavigator({ onExit, preview, onProfile }: { onExit: () => 
     });
     return () => subscription.remove();
   }, [selected]);
-  return selected ? <DeviceDetailsScreen key={selected.id} device={selected} onBack={() => setSelected(null)} /> : <DeviceListScreen onSelect={setSelected} onExit={onExit} preview={preview} onProfile={onProfile} />;
+  return selected ? <DeviceDetailsScreen key={selected.id} device={selected} onBack={() => setSelected(null)} /> : <DeviceListScreen onSelect={setSelected} onExit={onExit} preview={preview} onProfile={onProfile} onAnalytics={onAnalytics} />;
 }

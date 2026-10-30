@@ -11,18 +11,18 @@ const tabs: { label: Tab; icon: ComponentProps<typeof MaterialCommunityIcons>['n
   { label: 'Profile', icon: 'account-outline' },
 ];
 
-export function BottomTabs({ active, onDevices, onProfile }: {
-  active: 'Devices' | 'Profile'; onDevices: () => void; onProfile: () => void;
+export function BottomTabs({ active, onDevices, onAnalytics, onProfile }: {
+  active: 'Devices' | 'Analytics' | 'Profile'; onDevices: () => void; onAnalytics: () => void; onProfile: () => void;
 }) {
   return <View accessibilityRole="tablist" style={styles.tabs}>
     {tabs.map(tab => {
-      const disabled = tab.label === 'Locations' || tab.label === 'Analytics';
+      const disabled = tab.label === 'Locations';
       const selected = active === tab.label;
       const color = selected ? theme.colors.primary : '#AAAAAA';
       return <Pressable key={tab.label} accessibilityRole="tab"
         accessibilityLabel={disabled ? tab.label + ', coming soon' : tab.label}
         accessibilityState={{ selected, disabled }} disabled={disabled}
-        onPress={tab.label === 'Devices' ? onDevices : onProfile}
+        onPress={tab.label === 'Devices' ? onDevices : tab.label === 'Analytics' ? onAnalytics : onProfile}
         style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}>
         <MaterialCommunityIcons name={tab.icon} size={23} color={color} />
         <Text style={[styles.label, { color }]}>{tab.label}</Text>

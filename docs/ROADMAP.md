@@ -13,6 +13,7 @@ This repository is the main React Native application. The supplied conversation 
 - Preview entry from sign-in, device navigation and sign out.
 - Original device/map artwork extracted from the supplied Figma archive.
 - Profile and edit-profile screens with inline validation, session-only saves, avatar choices, and searchable organization/project selection.
+- Analytics dashboards with a native fill-level gauge, occupancy/valve status cards, metric details, and session-only dashboard selection.
 
 ## Next milestones
 
@@ -20,6 +21,7 @@ This repository is the main React Native application. The supplied conversation 
 2. Project overview using projectOverview.
 3. Connect the device list to project/cluster APIs.
 4. Connect device details/outputs/attributes to APIs and replace the static map preview with live location.
-5. Modules and device commands after the company supplies downlink payload specifications.
+5. Connect analytics dashboards and metric readings to backend APIs.
+6. Modules and device commands after the company supplies downlink payload specifications.
 
 The sanitized api-operations.json contains only query definitions from the supplied collection. It excludes tokens, credentials and account-specific values. There are no documented alerts/history endpoints. Do not send example downlinks to production.

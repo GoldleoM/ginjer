@@ -8,7 +8,7 @@ import type { Device } from '../types';
 import { BottomTabs } from '../../../components/BottomTabs';
 
 type Filter = 'all' | 'recent' | 'attention';
-export function DeviceListScreen({ onSelect, onExit, preview, onProfile }: { onSelect: (device: Device) => void; onExit: () => void; preview: boolean; onProfile: () => void }) {
+export function DeviceListScreen({ onSelect, onExit, preview, onProfile, onAnalytics }: { onSelect: (device: Device) => void; onExit: () => void; preview: boolean; onProfile: () => void; onAnalytics: () => void }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -43,7 +43,7 @@ export function DeviceListScreen({ onSelect, onExit, preview, onProfile }: { onS
         </Pressable>)}
         {devices.length === 0 && <View style={styles.empty}><MaterialCommunityIcons name="magnify" size={36} color={colors.light} /><Text style={styles.emptyTitle}>No devices found</Text><Text style={styles.emptyText}>Try a different name, ID, or filter.</Text><Pressable accessibilityRole="button" onPress={() => { setQuery(''); setFilter('all'); }} style={styles.reset}><Text style={styles.exit}>Clear search and filters</Text></Pressable></View>}
       </ScrollView>
-      <BottomTabs active="Devices" onDevices={() => {}} onProfile={onProfile} />
+      <BottomTabs active="Devices" onDevices={() => {}} onAnalytics={onAnalytics} onProfile={onProfile} />
     </View>
     <PreviewDialog visible={dialog !== null} title="Notifications" onClose={() => setDialog(null)}>
       <Text style={styles.dialogText}>Live notifications are not connected in this page preview.</Text>
