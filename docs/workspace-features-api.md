@@ -10,6 +10,23 @@ Only exact device ID + organization ID + project ID matches are navigable. Missi
 
 `automationRuns(automationRunsParams: AutomationRunsInput!)` takes `alertId` and `pageInfo: { pageNo, noOfRecordsPerPage }`. Pages are one based, with 20 records per request. Parent organization/rule identity is validated, and run records must match the selected organization, project, and rule. The UI displays state, trigger, timestamps, step, skipped triggers, and abort/cancellation reasons. No rule is toggled, run, created, or deleted by viewing these screens.
 
+### Automation Engine screen
+
+The compact automation list uses Solution/Output filters, backend enabled switches, manual-run buttons, schedule/step counters, overflow details, and a pale-green running state. Only rules with command steps or a manual trigger appear here; notification-only rules remain in Notifications. The separate Automation Runs screen provides expandable steps, feedback/check times, and delivery-attempt tables that stack on phones.
+
+Additional contracts verified against the development schema on 2026-10-30:
+
+- `solutionList` and `modules`: scoped filter/controller labels.
+- `alertSchedules(alertScheduleParamsInput: { alertId })`: actual schedule counts, filtered by organization/project/rule.
+- `automationRuns`: scoped run/step states, command values, feedback conditions, attempt numbers, due/sent/succeeded timestamps, notes, and downlink references.
+- `alertDownlinks(alertDownlinksParams: { alertId, pageInfo })`: delivery attempts, run/step IDs, transport, status, feedback, and failure details. Attempts load in pages of 50; older pages remain explicitly loadable. The UI does not invent a maximum retry count.
+- `toggleAlert(alertParamsInput: { organisationId, projectId, alertId })`: rereads the rule before flipping, avoids flipping an already matching state, and verifies the response identity/state.
+- `manualAutomation(alertId)`: rereads the scoped rule, checks manual support and current running history, then submits once. Only boolean `true` is accepted. A requested run is not reported as executed until run history says so. There are no automatic mutation retries.
+
+Running/requested cards and running history refresh every 22 seconds while foregrounded. Mutation buttons guard repeated taps; server errors remain visible and permissions are enforced by the backend. Merely opening the screens does not run or toggle anything. This update manages existing automations; native rule creation/editing/deletion is not included.
+
+Verification: 95 tests, TypeScript, and Android/iOS/web exports pass. Browser interactions use intercepted API fixtures (no real automation mutations), covering filters, one-shot run/toggle requests, running-state disabling, history expansion, pagination, and phone/tablet/desktop layouts. Development schema verification was read-only. Physical automation execution still requires a user-controlled acceptance test.
+
 ## Downlinks
 
 Discovery combines:
@@ -44,7 +61,7 @@ The UI matches the official website: controller dropdown, controller value text 
 - Both development and production schemas expose all seven integrated operations (`alerts`, `triggeredAlerts`, `automationRuns`, `getFavoriteDownlinks`, `sendDownlink`, `signUp`, `updateUserProfile`).
 - Automated tests cover request fields, scope isolation, permission failures, timestamps, sorting, payload validation, preserved false/zero values, mutation identity checks, and ambiguous command responses.
 - No production command, account creation, profile update, or automation change was executed for testing. Write operations still need a controlled acceptance test with the intended account/device.
-- Browser access was unavailable, so browser and physical-device interaction/visual QA remain pending.
+- Initial browser QA was unavailable. Subsequent theme/navigation/automation browser verification used local Chromium with test data; physical command delivery remains separate from UI verification.
 
 Health indicators use the existing last-heard timestamp and readings, not a backend health guarantee. History charts include only numeric outputs from the currently loaded page; booleans, missing values, invalid timestamps, and foreign-device packets are excluded. Charts explicitly label this scope.
 

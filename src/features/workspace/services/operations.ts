@@ -4,8 +4,9 @@ import type { Device } from '../../devices/types';
 export interface ProjectScope { organisationId: string; projectId: string; }
 export interface AutomationRule {
   id: string; name: string; active: boolean; triggers: string[]; schedule: string;
+  organizationId: string; projectId: string; solutionId: string; outputNames: string[];
   conditions: { outputId: string; operator: string; value: string }[];
-  actions: { deviceId: string; interfaceId: string; active?: boolean }[];
+  actions: { deviceId: string; interfaceId: string; active?: boolean; value?: unknown; delay?: number }[];
   deviceIds: string[];
 }
 export interface Notification {
@@ -36,8 +37,8 @@ function checkScope(scope: ProjectScope) { if (!scope.organisationId?.trim() || 
 export function normalizeRules(value: unknown, scope: ProjectScope): AutomationRule[] {
   return arr(value).map(obj).filter(row => matches(row, scope) && row._id && row.deleted !== true).map(row => {
     const actions = arr(row.advanceConditions).map(obj).filter(action => !!action.deviceId && !!action.downlinkInterfaceId)
-      .map(action => ({ deviceId: str(action.deviceId), interfaceId: str(action.downlinkInterfaceId), active: action.active === false || action.clusterActive === false ? false : action.active === true ? true : undefined }));
-    return { id: str(row._id), name: str(row.name) || 'Unnamed rule', active: row.active === true, triggers: arr(row.triggerTypes).map(str), schedule: str(row.scheduleName),
+      .map(action => ({ deviceId: str(action.deviceId), interfaceId: str(action.downlinkInterfaceId), value: action.value, delay: Number(action.scheduleInMin) || 0, active: action.active === false || action.clusterActive === false ? false : action.active === true ? true : undefined }));
+    return { id: str(row._id), organizationId: scope.organisationId, projectId: scope.projectId, solutionId: str(row.solutionId), outputNames: arr(row.outputName).map(str), name: str(row.name) || 'Unnamed rule', active: row.active === true, triggers: arr(row.triggerTypes).map(str), schedule: str(row.scheduleName),
       conditions: arr(row.conditions).map(obj).map(condition => ({ outputId: str(condition.outputId), operator: str(condition.conditionType), value: str(condition.value) })),
       actions, deviceIds: [...new Set([...arr(row.clusterConfigurations).map(obj).flatMap(cluster => arr(cluster.deviceIds).map(str)), ...actions.map(action => action.deviceId)])] };
   });
@@ -51,7 +52,7 @@ export function normalizeNotifications(value: unknown, scope: ProjectScope): Not
 export function notificationDevice(item: Notification, devices: Device[], scope: ProjectScope): Device | undefined {
   return devices.find(device => device.id === item.deviceId && device.organizationId === scope.organisationId && device.projectId === scope.projectId);
 }
-export const RULES_QUERY = 'query Rules($params: AlertParamsInput!) { alerts(alertParamsInput: $params) { _id name organisationId projectId active deleted triggerTypes scheduleName conditions { outputId conditionType value } advanceConditions { deviceId downlinkInterfaceId active clusterActive } clusterConfigurations { clusterId active deviceIds } } }';
+export const RULES_QUERY = 'query Rules($params: AlertParamsInput!) { alerts(alertParamsInput: $params) { _id name organisationId projectId solutionId outputName active deleted triggerTypes scheduleName conditions { outputId conditionType value } advanceConditions { deviceId downlinkInterfaceId value scheduleInMin active clusterActive } clusterConfigurations { clusterId active deviceIds } } }';
 export const NOTIFICATIONS_QUERY = 'query Notifications($params: TriggeredAlertParamsInput!) { triggeredAlerts(triggeredAlertParamsInput: $params) { _id organisationId projectId deviceId alertId status timeStamp triggeredCount outputValues { outputId outputValue label } } }';
 export const RUNS_QUERY = 'query AutomationHistory($params: AutomationRunsInput!) { automationRuns(automationRunsParams: $params) { alertId organisationId metadata { currentPage totalPages totalRecords } runs { _id organisationId projectId alertId state trigger triggerDeviceId triggeredAt finishedAt currentStep skippedTriggers abortReason cancelReason } } }';
 export function createOperationsApi(request: ApiRequest): OperationsApi {
