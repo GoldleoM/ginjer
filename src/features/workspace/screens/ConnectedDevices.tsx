@@ -11,10 +11,10 @@ import { sortDevices, type DeviceSort } from '../services/deviceInsights';
 import { deviceSummaryFields } from '../services/deviceData';
 
 export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace; onSelect: (device: Device) => void }) {
-  const { columns, itemStyle, onLayout } = useResponsiveColumns();
+  const { columns, itemStyle, onLayout } = useResponsiveColumns(140);
   const [query, setQuery] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
+  const [compact, setCompact] = useState(true);
   const [sort, setSort] = useState<DeviceSort>('name');
   const listColumns = compact ? 1 : columns;
   const [filter, setFilter] = useState<'current' | 'recent' | 'attention' | 'archived'>('current');
@@ -30,11 +30,11 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
       <TextInput value={query} onChangeText={setQuery} accessibilityLabel="Search devices by name, ID, or cluster" placeholder="Search Devices" autoCapitalize="none" autoCorrect={false}
         style={[styles.search, Platform.OS === 'web' && { outlineWidth: 0, outlineStyle: 'solid', outlineColor: 'transparent' }]} />
       <MaterialCommunityIcons name="magnify" size={21} color="#858585" />
+      <Pressable accessibilityRole="button" accessibilityLabel={compact ? 'Show device grid' : 'Show device list'} onPress={() => setCompact(value => !value)} style={styles.clear}><MaterialCommunityIcons name={compact ? 'view-grid-outline' : 'view-list-outline'} size={22} color={theme.colors.primary} /></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Device filters and sorting" accessibilityState={{ expanded: filtersOpen }} onPress={() => setFiltersOpen(value => !value)} style={styles.clear}><MaterialCommunityIcons name="filter-variant" size={22} color={filtersOpen ? theme.colors.primary : '#858585'} /></Pressable>
       {!!query && <Pressable accessibilityRole="button" accessibilityLabel="Clear device search" onPress={() => setQuery('')} style={styles.clear}><MaterialCommunityIcons name="close" size={22} color="#858585" /></Pressable>}
     </View>
     {filtersOpen && <><View style={[styles.filters, { marginBottom: 8 }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={compact ? 'Show expanded device cards' : 'Show compact device rows'} onPress={() => setCompact(value => !value)} style={styles.chip}><Text style={styles.chipText}>{compact ? 'View: Compact' : 'View: Expanded'}</Text></Pressable>
       {([['name', 'Name'], ['newest', 'Newest heard'], ['oldest', 'Oldest heard']] as const).map(([id, label]) => <Pressable key={id} accessibilityRole="button" accessibilityLabel={'Sort devices by ' + label} accessibilityState={{ selected: sort === id }} onPress={() => setSort(id)} style={[styles.chip, sort === id && styles.selectedChip]}><Text style={styles.chipText}>{label}</Text></Pressable>)}
     </View>
     <View style={styles.filters}>{([['current', 'All devices'], ['recent', 'Last 24 hours'], ['attention', 'Red readings'], ['archived', 'Archived']] as const).map(([id, label]) =>
@@ -44,10 +44,10 @@ export function ConnectedDevices({ workspace, onSelect }: { workspace: Workspace
       </View>} data={devices} keyExtractor={device => device.id} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={workspace.devicesLoading} onRefresh={workspace.refresh} tintColor="#8BAE41" />}
       renderItem={({ item: device }) => <View style={compact ? { width: '100%' } : itemStyle}><Pressable accessibilityRole="button" accessibilityLabel={device.name + ', ' + device.hardwareId + '. View details'}
-        onPress={() => onSelect(device)} style={({ pressed }) => [liveStyles.card, pressed && { opacity: 0.7 }]}>
-        <View style={styles.identity}><DeviceThumbnail device={device} /><View style={{ flex: 1, minWidth: 0 }}>
+        onPress={() => onSelect(device)} style={({ pressed }) => [liveStyles.card, !compact && styles.gridCard, pressed && { opacity: 0.7 }]}>
+        <View style={[styles.identity, !compact && styles.gridIdentity]}><DeviceThumbnail device={device} /><View style={{ flex: 1, minWidth: 0, width: compact ? undefined : '100%' }}>
           <Text style={styles.name}>{device.name}</Text><Text selectable style={styles.id}>{device.devEui || device.hardwareId}</Text>
-        </View><View style={styles.activity}><Text style={styles.lastHeardLabel}>Last heard</Text><Text style={styles.lastHeard}>{device.lastHeard}</Text></View></View>
+        </View><View style={[styles.activity, !compact && styles.gridActivity]}><Text style={styles.lastHeardLabel}>Last heard</Text><Text style={[styles.lastHeard, !compact && { textAlign: 'left' }]}>{device.lastHeard}</Text></View></View>
         <View style={styles.readings}>{deviceSummaryFields(device).map(field => {
           const palette = outputColors[field.tone || 'neutral'];
           return <View key={field.id} style={styles.reading}>
@@ -71,6 +71,7 @@ const outputColors = {
   neutral: { foreground: '#425365', background: '#F3F6F8', border: '#DCE3E9' },
 };
 const styles = StyleSheet.create({
+  gridCard: { flex: 1, padding: 12 }, gridIdentity: { flexDirection: 'column', alignItems: 'flex-start', gap: 8 }, gridActivity: { width: '100%', alignItems: 'flex-start' },
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 12, paddingLeft: 16, paddingRight: 4, backgroundColor: 'white', borderRadius: 8, ...theme.cardShadow },
   search: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 13, color: '#303030' }, clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: 12 },

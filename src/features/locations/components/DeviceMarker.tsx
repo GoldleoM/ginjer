@@ -4,11 +4,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { LocatedDevice, MarkerTone } from '../types';
 
 const markerColors: Record<MarkerTone, { solid: string; halo: string }> = {
-  green: { solid: '#9DBD62', halo: '#9DBD6238' },
-  orange: { solid: '#EA994A', halo: '#EA994A38' },
-  red: { solid: '#ED6652', halo: '#ED665238' },
-  yellow: { solid: '#E9CF50', halo: '#E9CF5038' },
-  blue: { solid: '#7DB6F7', halo: '#7DB6F738' },
+  green: { solid: '#9DBD62', halo: '#E7EED9' },
+  orange: { solid: '#EA994A', halo: '#FAE7D5' },
+  red: { solid: '#ED6652', halo: '#F9DDD7' },
+  yellow: { solid: '#E9CF50', halo: '#FAF2CD' },
+  blue: { solid: '#7DB6F7', halo: '#DFECFC' },
 };
 export function DeviceMarker({ item, x, y, selected, onPress }: {
   item: LocatedDevice; x: number; y: number; selected: boolean; onPress: () => void;
@@ -27,5 +27,5 @@ const styles = StyleSheet.create({
   halo: { position: 'absolute', width: 86, height: 86, borderRadius: 43, alignItems: 'center', justifyContent: 'center' },
   pin: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   letter: { color: 'white', fontSize: 24, fontWeight: '500' },
-  selected: { borderWidth: 2, borderColor: '#FFFFFFCC' },
+  selected: { borderWidth: 2, borderColor: '#8BAE41' },
 });
