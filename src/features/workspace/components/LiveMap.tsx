@@ -8,8 +8,8 @@ import { WorkspacePicker } from './WorkspaceUI';
 import { MapTile } from './MapTile';
 
 const tileTemplate = process.env.EXPO_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
-  devices: Device[]; selectedId?: string; onSelect: (device: Device) => void; onBackground?: () => void;
+export function LiveMap({ devices, selectedId, onSelect, onBackground, onInteractionChange }: {
+  devices: Device[]; selectedId?: string; onSelect: (device: Device) => void; onBackground?: () => void; onInteractionChange?: (active: boolean) => void;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<{ center: Coordinates; zoom: number }>({ center: { lat: 0, lng: 0 }, zoom: 3 });
@@ -24,6 +24,11 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
   const mapRef = useRef<View>(null);
   const mapOrigin = useRef({ x: 0, y: 0 });
   const latestSize = useRef(size); latestSize.current = size;
+  const interactionCallback = useRef(onInteractionChange); interactionCallback.current = onInteractionChange;
+  const tapCallback = useRef<(point: MapTouch) => void>(() => {});
+  const touchStart = useRef<MapTouch | null>(null);
+  const moved = useRef(false);
+  useEffect(() => () => interactionCallback.current?.(false), []);
   const gestureStart = useRef<{ view: MapViewState; touches: MapTouch[] } | null>(null);
   function measureOrigin() {
     mapRef.current?.measureInWindow((x, y) => {
@@ -40,22 +45,40 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
     const begin = (event: GestureResponderEvent) => { gestureStart.current = { view: latest.current, touches: touches(event) }; };
     const wantsGesture = (event: GestureResponderEvent, gesture: { dx: number; dy: number }) => event.nativeEvent.touches.length > 1 || Math.abs(gesture.dx) + Math.abs(gesture.dy) > 5;
     return PanResponder.create({
+      // Claim the map surface on the FIRST finger, before Android's parent
+      // ScrollView can intercept movement. Controls are separate siblings.
+      onStartShouldSetPanResponder: () => true,
+      onShouldBlockNativeResponder: () => true,
       onStartShouldSetPanResponderCapture: event => { measureOrigin(); return event.nativeEvent.touches.length > 1; },
       onMoveShouldSetPanResponder: wantsGesture,
       onMoveShouldSetPanResponderCapture: wantsGesture,
-      onPanResponderGrant: begin,
-      onPanResponderStart: begin,
+      onPanResponderGrant: event => {
+        interactionCallback.current?.(true);
+        touchStart.current = touches(event)[0] || null;
+        moved.current = event.nativeEvent.touches.length > 1;
+        begin(event);
+      },
+      onPanResponderStart: event => {
+        if (event.nativeEvent.touches.length > 1) moved.current = true;
+        begin(event);
+      },
       onPanResponderEnd: begin,
       onPanResponderMove: event => {
         const current = touches(event), start = gestureStart.current;
+        const first = touchStart.current;
+        if (current.length > 1 || (first && current[0] && Math.hypot(current[0].x - first.x, current[0].y - first.y) > 5)) moved.current = true;
         if (!start || start.touches.length !== current.length) { begin(event); return; }
         const next = gestureMap(start.view, start.touches, current, latestSize.current.width, latestSize.current.height);
         latest.current = next;
         setView(next);
       },
       onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: () => { gestureStart.current = null; },
-      onPanResponderTerminate: () => { gestureStart.current = null; },
+      onPanResponderRelease: () => {
+        if (!moved.current && touchStart.current) tapCallback.current(touchStart.current);
+        gestureStart.current = null;
+        interactionCallback.current?.(false);
+      },
+      onPanResponderTerminate: () => { gestureStart.current = null; interactionCallback.current?.(false); },
     });
   }, []);
   const tileZoom = Math.floor(view.zoom), tileSize = TILE_SIZE * 2 ** (view.zoom - tileZoom);
@@ -78,12 +101,16 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
     const group = groups.get(key);
     if (group) group.devices.push(device); else groups.set(key, { ...point, devices: [device] });
   }
+  tapCallback.current = point => {
+    const group = [...groups.values()].reverse().find(group => Math.abs(point.x - group.x) <= 24 && Math.abs(point.y - group.y) <= 24);
+    if (group) {
+      if (group.devices.length > 1) setCluster(group.devices); else onSelect(group.devices[0]);
+    } else onBackground?.();
+  };
   function zoomBy(delta: number) { setView(value => ({ ...value, zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value.zoom + delta)) })); setTileError(false); }
-  return <View ref={mapRef} style={[styles.map, Platform.OS === 'web' && ({ touchAction: 'none' } as ViewStyle)]} onLayout={event => { setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height }); measureOrigin(); }} {...pan.panHandlers}>
+  return <View ref={mapRef} style={[styles.map, Platform.OS === 'web' && ({ touchAction: 'none' } as ViewStyle)]} onLayout={event => { setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height }); measureOrigin(); }}>
     {size.width > 0 && size.height > 0 && valid.length > 0 && fittedKey === viewportKey && tiles.map(tile =>
       <MapTile key={tile.key + ':' + tileRevision} uri={tile.url} x={tile.x} y={tile.y} size={tileSize + 0.5} onError={() => setTileError(true)} />)}
-    <Pressable accessibilityRole="button" accessibilityLabel="Close map selection" accessible={!!selectedId} focusable={!!selectedId}
-      onPress={onBackground} style={StyleSheet.absoluteFill} />
     {[...groups.entries()].map(([key, group]) => <Pressable key={key} accessibilityRole="button"
       accessibilityLabel={group.devices.length > 1 ? group.devices.length + ' devices at this location. Choose a device' : 'Show ' + group.devices[0].name}
       accessibilityState={{ selected: group.devices.some(device => device.id === selectedId) }}
@@ -92,6 +119,7 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
       {group.devices.length > 1 ? <Text style={styles.cluster}>{group.devices.length}</Text>
         : <MaterialCommunityIcons name={group.devices[0].icon ?? 'router-wireless'} size={24} color="white" />}
     </Pressable>)}
+    <View accessible={false} style={styles.gestureSurface} {...pan.panHandlers} />
     <View style={styles.controls}>
       <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" disabled={view.zoom === MAX_ZOOM} onPress={() => zoomBy(1)} style={styles.control}><MaterialCommunityIcons name="plus" size={24} color="#303030" /></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" disabled={view.zoom === MIN_ZOOM} onPress={() => zoomBy(-1)} style={styles.control}><MaterialCommunityIcons name="minus" size={24} color="#303030" /></Pressable>
@@ -104,12 +132,13 @@ export function LiveMap({ devices, selectedId, onSelect, onBackground }: {
   </View>;
 }
 const styles = StyleSheet.create({
+  gestureSurface: { ...StyleSheet.absoluteFillObject, zIndex: 4, elevation: 4 },
   map: { flex: 1, overflow: 'hidden', backgroundColor: '#E4EDE9' },
   marker: { position: 'absolute', width: 48, height: 48, borderRadius: 24, backgroundColor: '#6FA9DD', borderWidth: 3, borderColor: '#FFFFFFCC', alignItems: 'center', justifyContent: 'center', elevation: 3 },
   selected: { backgroundColor: '#83AF23', borderColor: 'white' }, cluster: { fontSize: 20, fontWeight: '600', color: 'white' },
-  controls: { position: 'absolute', right: 12, top: 12, backgroundColor: 'white', borderRadius: 8, elevation: 4, overflow: 'hidden' },
+  controls: { zIndex: 5, position: 'absolute', right: 12, top: 12, backgroundColor: 'white', borderRadius: 8, elevation: 4, overflow: 'hidden' },
   control: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#EEEEEE' },
-  attribution: { position: 'absolute', right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 4, backgroundColor: '#FFFFFFEE' },
-  attributionText: { color: '#555555', fontSize: 9 }, tileError: { position: 'absolute', left: 8, top: 8, right: 65, padding: 10, backgroundColor: '#FFFFFFEE', borderRadius: 7 },
+  attribution: { zIndex: 5, elevation: 5, position: 'absolute', right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 4, backgroundColor: '#FFFFFFEE' },
+  attributionText: { color: '#555555', fontSize: 9 }, tileError: { zIndex: 5, elevation: 5, position: 'absolute', left: 8, top: 8, right: 65, padding: 10, backgroundColor: '#FFFFFFEE', borderRadius: 7 },
   tileErrorText: { color: '#858585', fontSize: 11, lineHeight: 17 },
 });

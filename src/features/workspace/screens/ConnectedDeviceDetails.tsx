@@ -58,6 +58,7 @@ function LogsList({ logs }: { logs: DeviceLog[] }) {
 export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing = false, error, inspectionApi }: {
   device: Device; onBack: () => void; onRefresh?: () => void; refreshing?: boolean; error?: string; inspectionApi?: DeviceInspectionApi;
 }) {
+  const [mapInteracting, setMapInteracting] = useState(false);
   const [tab, setTab] = useState<InspectionTab>('details');
   const [mapError, setMapError] = useState('');
   const [moreDetails, setMoreDetails] = useState(false);
@@ -83,7 +84,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
     <View accessibilityRole="tablist" style={styles.tabs}>{([['details', 'Details'], ['history', 'History'], ['logs', 'Logs']] as const).map(([value, label]) =>
       <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.activeTab]}>
         <Text style={[styles.tabLabel, tab === value && styles.linkText]}>{label}</Text></Pressable>)}</View>
-    <ScrollView key={tab} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} tintColor="#83AF23" />}>
+    <ScrollView scrollEnabled={!mapInteracting} key={tab} contentContainerStyle={styles.content} refreshControl={<RefreshControl enabled={!mapInteracting} refreshing={busy} onRefresh={refresh} tintColor="#83AF23" />}>
       {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {tab === 'details' ? <>
         <View style={styles.identity}><DeviceThumbnail device={info?.imageUri ? { ...device, image: { uri: info.imageUri } } : device} size={72} />
@@ -129,7 +130,7 @@ export function ConnectedDeviceDetails({ device, onBack, onRefresh, refreshing =
         </View>
         {!!device.coordinates && <View style={[liveStyles.card, styles.information]}>
           <Text accessibilityRole="header" style={styles.cardTitle}>Device location</Text>
-          <View style={styles.map}><LiveMap devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
+          <View style={styles.map}><LiveMap onInteractionChange={setMapInteracting} devices={[device]} selectedId={device.id} onSelect={() => {}} /></View>
           <Pressable accessibilityRole="link" onPress={openMap} style={styles.mapLink}><MaterialCommunityIcons name="open-in-new" size={18} color="#6D941B" /><Text style={styles.linkText}>Open map</Text></Pressable>
           {!!mapError && <Text accessibilityRole="alert" style={styles.error}>{mapError}</Text>}
         </View>}

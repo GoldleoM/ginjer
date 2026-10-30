@@ -12,6 +12,7 @@ import { DownlinkSheet } from '../components/DownlinkSheet';
 export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { workspace: Workspace; onDetails: (device: Device) => void; onBackToDevices: () => void }) {
   const { height } = useResponsiveLayout();
   const { columns, itemStyle, onLayout } = useResponsiveColumns();
+  const [mapInteracting, setMapInteracting] = useState(false);
   const [query, setQuery] = useState('');
   const [missing, setMissing] = useState(false);
   const [selectedId, setSelectedId] = useState('');
@@ -42,10 +43,10 @@ export function ConnectedLocations({ workspace, onDetails, onBackToDevices }: { 
       ListHeaderComponent={<View style={{ marginHorizontal: -12 }}>{controls}</View>} data={unmapped} keyExtractor={device => device.id} contentContainerStyle={styles.list}
       renderItem={({ item }) => <View style={itemStyle}><Pressable accessibilityRole="button" onPress={() => onDetails(item)} style={[liveStyles.card, styles.deviceRow]}><DeviceThumbnail device={item} /><View style={{ flex: 1, minWidth: 0 }}><Text style={styles.name}>{item.name}</Text><Text style={liveStyles.caption}>{item.hardwareId}</Text><Text style={liveStyles.caption}>Coordinates not reported</Text></View><MaterialCommunityIcons name="chevron-right" size={22} color="#83AF23" /></Pressable></View>}
       ListEmptyComponent={<Feedback title="No devices without locations" message={query ? 'Try another device name or ID.' : 'Every current device has reported valid coordinates.'} />} />
-      : <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      : <ScrollView scrollEnabled={!mapInteracting} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         {controls}
         {mapped.length ? <View style={{ flex: 1, minHeight: Math.max(280, Math.min(height * 0.58, 640)) }} onLayout={event => setMapHeight(event.nativeEvent.layout.height)}>
-          <LiveMap devices={mapped} selectedId={selectedId} onSelect={device => setSelectedId(current => current === device.id ? '' : device.id)} onBackground={() => setSelectedId('')} />
+          <LiveMap onInteractionChange={setMapInteracting} devices={mapped} selectedId={selectedId} onSelect={device => setSelectedId(current => current === device.id ? '' : device.id)} onBackground={() => setSelectedId('')} />
           {selected && <LocationDeviceCard device={selected} top={Math.max(12, mapHeight - cardHeight - 30)} maxHeight={Math.max(120, mapHeight - 24)} onLayout={setCardHeight} onDetails={() => onDetails(selected)} onDownlink={() => setDownlinkDevice(selected)} />}
         </View> : <Feedback title="No locations to display" message={unmapped.length ? 'These devices have not reported valid coordinates. Select Without location to view them.' : query ? 'Try another device name or ID.' : 'This project has no located devices.'} />}
       </ScrollView>}
