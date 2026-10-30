@@ -3,6 +3,7 @@ import { AppState, Platform } from 'react-native';
 import type { AuthUser } from '../auth/types';
 import type { Device } from '../devices/types';
 import type { Account, Module, ProjectOverview, WorkspaceApi } from './types';
+import { startDevicePolling } from './services/devicePolling';
 import { selectedProject } from './services/projectSelection';
 
 const message = (error: unknown) => error instanceof Error ? error.message : 'Unable to load this information. Please try again.';
@@ -73,12 +74,27 @@ export function useWorkspace(api: WorkspaceApi, user: AuthUser) {
     const controller = new AbortController();
     setDeviceData(previous => previous.scope === scope ? previous : { scope: '', items: [] }); setDevicesError('');
     if (!account || !project) { setDevicesLoading(false); return; }
-    setDevicesLoading(true);
-    api.devices(account.id, project.id, controller.signal).then(items => {
-      if (!controller.signal.aborted) { setDeviceData({ scope, items }); setUpdatedAt(new Date().toISOString()); }
-    }).catch(error => { if (!controller.signal.aborted) setDevicesError(message(error)); })
-      .finally(() => { if (!controller.signal.aborted) setDevicesLoading(false); });
-    return () => controller.abort();
+    const active = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
+      && (Platform.OS !== 'web' || typeof document === 'undefined' || document.visibilityState !== 'hidden');
+    const polling = startDevicePolling(async initial => {
+      if (initial) setDevicesLoading(true);
+      try {
+        const items = await api.devices(account.id, project.id, controller.signal);
+        if (!controller.signal.aborted) {
+          setDeviceData({ scope, items }); setUpdatedAt(new Date().toISOString()); setDevicesError('');
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) setDevicesError(message(error));
+      } finally {
+        if (initial && !controller.signal.aborted) setDevicesLoading(false);
+      }
+    }, active);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') polling.refresh(); });
+    if (Platform.OS === 'web' && typeof document !== 'undefined') document.addEventListener('visibilitychange', polling.refresh);
+    return () => {
+      polling.stop(); controller.abort(); subscription.remove();
+      if (Platform.OS === 'web' && typeof document !== 'undefined') document.removeEventListener('visibilitychange', polling.refresh);
+    };
   }, [api, account?.id, project?.id, scope, revision]);
 
   useEffect(() => {
